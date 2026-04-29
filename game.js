@@ -123,95 +123,8 @@ function updateBullets() {
   bullets = bullets.filter(b => !b.hit);
 }
 
-// ===== DRAW =====
 function draw() {
-function drawSoldier(u) {
-  const isPlayer = u.side === "player";
-  const dir = isPlayer ? 1 : -1;
-
-  ctx.save();
-  ctx.translate(u.x, u.y);
-
-  // colore squadra
-  ctx.fillStyle = isPlayer ? "#1d4ed8" : "#b91c1c";
-  ctx.strokeStyle = "#111";
-  ctx.lineWidth = 2;
-
-  if (u.type === "tank") {
-    // carro
-    ctx.fillStyle = isPlayer ? "#1f2937" : "#7f1d1d";
-    ctx.fillRect(-22, -12, 44, 24);
-    ctx.strokeRect(-22, -12, 44, 24);
-
-    // torretta
-    ctx.fillRect(-8, -20, 16, 14);
-    ctx.strokeRect(-8, -20, 16, 14);
-
-    // cannone
-    ctx.beginPath();
-    ctx.moveTo(8 * dir, -14);
-    ctx.lineTo(34 * dir, -14);
-    ctx.stroke();
-
-  } else {
-    // corpo
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 8, 13, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    // testa
-    ctx.fillStyle = "#d6b48c";
-    ctx.beginPath();
-    ctx.arc(0, -17, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    // elmetto
-    ctx.fillStyle = "#374151";
-    ctx.beginPath();
-    ctx.arc(0, -20, 7, Math.PI, 0);
-    ctx.fill();
-
-    // gambe
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-4, 12);
-    ctx.lineTo(-8, 22);
-    ctx.moveTo(4, 12);
-    ctx.lineTo(8, 22);
-    ctx.stroke();
-
-    // fucile / mitragliatrice
-    ctx.strokeStyle = "#222";
-    ctx.lineWidth = u.type === "mg" ? 4 : 3;
-    ctx.beginPath();
-    ctx.moveTo(5 * dir, -4);
-    ctx.lineTo(28 * dir, -8);
-    ctx.stroke();
-
-    // canna lunga mitragliere
-    if (u.type === "mg") {
-      ctx.beginPath();
-      ctx.moveTo(28 * dir, -8);
-      ctx.lineTo(38 * dir, -8);
-      ctx.stroke();
-    }
-  }
-
-  ctx.restore();
-
-  // barra vita
-  const maxHp = u.type === "tank" ? 300 : u.type === "mg" ? 80 : 100;
-  const hpPercent = Math.max(0, u.hp / maxHp);
-
-  ctx.fillStyle = "rgba(0,0,0,0.6)";
-  ctx.fillRect(u.x - 16, u.y - 34, 32, 4);
-
-  ctx.fillStyle = hpPercent > 0.5 ? "#22c55e" : hpPercent > 0.25 ? "#facc15" : "#ef4444";
-  ctx.fillRect(u.x - 16, u.y - 34, 32 * hpPercent, 4);
-}  // sfondo
+  // sfondo
   ctx.fillStyle = "#3a5f3a";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -220,18 +133,33 @@ function drawSoldier(u) {
   ctx.fillRect(0, 0, baseLeft, canvas.height);
   ctx.fillRect(baseRight, 0, canvas.width - baseRight, canvas.height);
 
-// unità
-units.forEach(u => {
-  drawSoldier(u);
-});
+  // linee corsie (facoltativo ma utile visivamente)
+  ctx.strokeStyle = "rgba(0,0,0,0.2)";
+  ctx.lineWidth = 2;
+  lanes.forEach(l => {
+    ctx.beginPath();
+    ctx.moveTo(0, l.y);
+    ctx.lineTo(canvas.width, l.y);
+    ctx.stroke();
+  });
+
+  // unità (soldatini)
+  units.forEach(u => {
+    drawSoldier(u);
+  });
 
   // proiettili
-  ctx.fillStyle = "yellow";
+  ctx.fillStyle = "#facc15";
   bullets.forEach(b => {
     ctx.fillRect(b.x, b.y, 4, 4);
   });
-}
 
+  // HUD base (facoltativo)
+  ctx.fillStyle = "white";
+  ctx.font = "16px Arial";
+  ctx.fillText("PLAYER", 20, 20);
+  ctx.fillText("ENEMY", canvas.width - 90, 20);
+}
 // ===== WIN/LOSE =====
 function checkWin() {
   units.forEach(u => {
