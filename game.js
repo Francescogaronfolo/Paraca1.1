@@ -4,26 +4,34 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+// ===== CORSIE =====
 const lanes = [
   { y: canvas.height * 0.4 },
   { y: canvas.height * 0.5 },
   { y: canvas.height * 0.6 }
 ];
 
+// ===== UNITÀ =====
 let units = [];
 let bullets = [];
 
+// ===== BASE =====
 const baseLeft = 100;
 const baseRight = canvas.width - 100;
 
+// ===== TRINCEE =====
+const trenchLeft = 250;
+const trenchRight = canvas.width - 250;
+
+// ===== CREAZIONE UNITÀ =====
 function createUnit(type, side, laneIndex) {
-  let config = {
+  const config = {
     rifle: { hp: 100, speed: 1, range: 120, dmg: 10, rate: 60 },
     mg: { hp: 80, speed: 0.8, range: 160, dmg: 5, rate: 20 },
     tank: { hp: 300, speed: 0.5, range: 200, dmg: 20, rate: 80 }
   };
 
-  let c = config[type];
+  const c = config[type];
 
   return {
     x: side === "player" ? baseLeft : baseRight,
@@ -37,24 +45,27 @@ function createUnit(type, side, laneIndex) {
     side,
     type,
     state: "walk",
-    lane: laneIndex
+    lane: laneIndex,
+    inTrench: false
   };
 }
 
+// ===== SPAWN =====
 function spawnPlayer(type) {
-  let lane = Math.floor(Math.random() * lanes.length);
+  const lane = Math.floor(Math.random() * lanes.length);
   units.push(createUnit(type, "player", lane));
 }
 
 function spawnEnemy() {
-  let types = ["rifle", "mg"];
-  let type = types[Math.floor(Math.random() * types.length)];
-  let lane = Math.floor(Math.random() * lanes.length);
+  const types = ["rifle", "mg"];
+  const type = types[Math.floor(Math.random() * types.length)];
+  const lane = Math.floor(Math.random() * lanes.length);
   units.push(createUnit(type, "enemy", lane));
 }
 
 setInterval(spawnEnemy, 2000);
 
+// ===== TROVA TARGET =====
 function findTarget(unit) {
   return units.find(u =>
     u.side !== unit.side &&
@@ -63,19 +74,34 @@ function findTarget(unit) {
   );
 }
 
+// ===== UPDATE UNITÀ =====
 function updateUnits() {
   units.forEach(unit => {
+
+    // entra in trincea
+    if (unit.side === "player" && unit.x >= trenchLeft) {
+      unit.inTrench = true;
+    }
+    if (unit.side === "enemy" && unit.x <= trenchRight) {
+      unit.inTrench = true;
+    }
+
     let target = findTarget(unit);
 
     if (target) {
       unit.state = "shoot";
+
       if (unit.cooldown <= 0) {
         shoot(unit, target);
         unit.cooldown = unit.rate;
       }
     } else {
       unit.state = "walk";
-      unit.x += unit.speed;
+
+      // si fermano in trincea
+      if (!unit.inTrench) {
+        unit.x += unit.speed;
+      }
     }
 
     if (unit.cooldown > 0) unit.cooldown--;
@@ -84,29 +110,34 @@ function updateUnits() {
   units = units.filter(u => u.hp > 0);
 }
 
+// ===== SPARO =====
 function shoot(unit, target) {
   bullets.push({
     x: unit.x,
     y: unit.y,
     target,
-    dmg: unit.dmg,
-    fx: false
+    dmg: unit.dmg
   });
 }
 
+// ===== UPDATE BULLETS =====
 function updateBullets() {
   bullets.forEach(b => {
-    if (b.fx) {
-      b.life--;
-      return;
-    }
+    if (b.fx) return;
 
     let dx = b.target.x - b.x;
     let dy = b.target.y - b.y;
     let dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < 5) {
-      b.target.hp -= b.dmg;
+      let damage = b.dmg;
+
+      // riduzione danno in trincea
+      if (b.target.inTrench) {
+        damage *= 0.5;
+      }
+
+      b.target.hp -= damage;
       b.hit = true;
 
       bullets.push({
@@ -115,10 +146,15 @@ function updateBullets() {
         fx: true,
         life: 10
       });
+
     } else {
       b.x += dx / dist * 5;
       b.y += dy / dist * 5;
     }
+  });
+
+  bullets.forEach(b => {
+    if (b.fx) b.life--;
   });
 
   bullets = bullets.filter(b => {
@@ -127,16 +163,23 @@ function updateBullets() {
   });
 }
 
+// ===== DRAW =====
 function draw() {
   ctx.fillStyle = "#3a5f3a";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  // basi
   ctx.fillStyle = "#654321";
   ctx.fillRect(0, 0, baseLeft, canvas.height);
   ctx.fillRect(baseRight, 0, canvas.width - baseRight, canvas.height);
 
+  // trincee
+  ctx.fillStyle = "#3b2f2f";
+  ctx.fillRect(trenchLeft - 20, 0, 40, canvas.height);
+  ctx.fillRect(trenchRight - 20, 0, 40, canvas.height);
+
+  // corsie
   ctx.strokeStyle = "rgba(0,0,0,0.2)";
-  ctx.lineWidth = 2;
   lanes.forEach(l => {
     ctx.beginPath();
     ctx.moveTo(0, l.y);
@@ -144,10 +187,10 @@ function draw() {
     ctx.stroke();
   });
 
-  units.forEach(u => {
-    drawSoldier(u);
-  });
+  // unità
+  units.forEach(u => drawSoldier(u));
 
+  // proiettili
   bullets.forEach(b => {
     if (b.fx) {
       ctx.fillStyle = "orange";
@@ -159,13 +202,9 @@ function draw() {
       ctx.fillRect(b.x, b.y, 4, 4);
     }
   });
-
-  ctx.fillStyle = "white";
-  ctx.font = "16px Arial";
-  ctx.fillText("PLAYER", 20, 20);
-  ctx.fillText("ENEMY", canvas.width - 90, 20);
 }
 
+// ===== SOLDATO =====
 function drawSoldier(u) {
   const isPlayer = u.side === "player";
   const dir = isPlayer ? 1 : -1;
@@ -173,94 +212,32 @@ function drawSoldier(u) {
   ctx.save();
   ctx.translate(u.x, u.y);
 
-  if (u.type === "tank") {
-    ctx.fillStyle = isPlayer ? "#1f2937" : "#7f1d1d";
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 2;
+  ctx.fillStyle = isPlayer ? "#1d4ed8" : "#b91c1c";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 8, 13, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-    ctx.fillRect(-22, -12, 44, 24);
-    ctx.strokeRect(-22, -12, 44, 24);
+  ctx.fillStyle = "#d6b48c";
+  ctx.beginPath();
+  ctx.arc(0, -17, 6, 0, Math.PI * 2);
+  ctx.fill();
 
-    ctx.fillRect(-8, -20, 16, 14);
-    ctx.strokeRect(-8, -20, 16, 14);
-
-    ctx.beginPath();
-    ctx.moveTo(8 * dir, -14);
-    ctx.lineTo(34 * dir, -14);
-    ctx.stroke();
-  } else {
-    ctx.fillStyle = isPlayer ? "#1d4ed8" : "#b91c1c";
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 2;
-
-    let offset = u.state === "walk" ? Math.sin(Date.now() * 0.01) * 2 : 0;
-
-    ctx.beginPath();
-    ctx.ellipse(0, offset, 8, 13, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#d6b48c";
-    ctx.beginPath();
-    ctx.arc(0, -17, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#374151";
-    ctx.beginPath();
-    ctx.arc(0, -20, 7, Math.PI, 0);
-    ctx.fill();
-
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-4, 12);
-    ctx.lineTo(-8, 22);
-    ctx.moveTo(4, 12);
-    ctx.lineTo(8, 22);
-    ctx.stroke();
-
-    ctx.strokeStyle = "#222";
-    ctx.lineWidth = u.type === "mg" ? 4 : 3;
-    ctx.beginPath();
-    ctx.moveTo(5 * dir, -4);
-    ctx.lineTo(28 * dir, -8);
-    ctx.stroke();
-
-    if (u.state === "shoot") {
-      ctx.fillStyle = "#facc15";
-      ctx.beginPath();
-      ctx.arc(30 * dir, -8, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    if (u.type === "mg") {
-      ctx.beginPath();
-      ctx.moveTo(28 * dir, -8);
-      ctx.lineTo(38 * dir, -8);
-      ctx.stroke();
-    }
-  }
+  ctx.strokeStyle = "#222";
+  ctx.beginPath();
+  ctx.moveTo(5 * dir, -4);
+  ctx.lineTo(28 * dir, -8);
+  ctx.stroke();
 
   ctx.restore();
-
-  const maxHp = u.type === "tank" ? 300 : u.type === "mg" ? 80 : 100;
-  const hpPercent = Math.max(0, u.hp / maxHp);
-
-  ctx.fillStyle = "rgba(0,0,0,0.6)";
-  ctx.fillRect(u.x - 16, u.y - 34, 32, 4);
-
-  ctx.fillStyle = hpPercent > 0.5 ? "#22c55e" : hpPercent > 0.25 ? "#facc15" : "#ef4444";
-  ctx.fillRect(u.x - 16, u.y - 34, 32 * hpPercent, 4);
 }
 
+// ===== WIN/LOSE =====
 function checkWin() {
   units.forEach(u => {
     if (u.side === "player" && u.x > baseRight) {
       alert("VITTORIA");
       location.reload();
     }
-
     if (u.side === "enemy" && u.x < baseLeft) {
       alert("SCONFITTA");
       location.reload();
@@ -268,6 +245,7 @@ function checkWin() {
   });
 }
 
+// ===== LOOP =====
 function gameLoop() {
   updateUnits();
   updateBullets();
