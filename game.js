@@ -160,6 +160,84 @@ function draw() {
   ctx.fillText("PLAYER", 20, 20);
   ctx.fillText("ENEMY", canvas.width - 90, 20);
 }
+function drawSoldier(u) {
+  const isPlayer = u.side === "player";
+  const dir = isPlayer ? 1 : -1;
+
+  ctx.save();
+  ctx.translate(u.x, u.y);
+
+  if (u.type === "tank") {
+    ctx.fillStyle = isPlayer ? "#1f2937" : "#7f1d1d";
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 2;
+
+    ctx.fillRect(-22, -12, 44, 24);
+    ctx.strokeRect(-22, -12, 44, 24);
+
+    ctx.fillRect(-8, -20, 16, 14);
+    ctx.strokeRect(-8, -20, 16, 14);
+
+    ctx.beginPath();
+    ctx.moveTo(8 * dir, -14);
+    ctx.lineTo(34 * dir, -14);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = isPlayer ? "#1d4ed8" : "#b91c1c";
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 8, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#d6b48c";
+    ctx.beginPath();
+    ctx.arc(0, -17, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#374151";
+    ctx.beginPath();
+    ctx.arc(0, -20, 7, Math.PI, 0);
+    ctx.fill();
+
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-4, 12);
+    ctx.lineTo(-8, 22);
+    ctx.moveTo(4, 12);
+    ctx.lineTo(8, 22);
+    ctx.stroke();
+
+    ctx.strokeStyle = "#222";
+    ctx.lineWidth = u.type === "mg" ? 4 : 3;
+    ctx.beginPath();
+    ctx.moveTo(5 * dir, -4);
+    ctx.lineTo(28 * dir, -8);
+    ctx.stroke();
+
+    if (u.type === "mg") {
+      ctx.beginPath();
+      ctx.moveTo(28 * dir, -8);
+      ctx.lineTo(38 * dir, -8);
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+
+  const maxHp = u.type === "tank" ? 300 : u.type === "mg" ? 80 : 100;
+  const hpPercent = Math.max(0, u.hp / maxHp);
+
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillRect(u.x - 16, u.y - 34, 32, 4);
+
+  ctx.fillStyle = hpPercent > 0.5 ? "#22c55e" : hpPercent > 0.25 ? "#facc15" : "#ef4444";
+  ctx.fillRect(u.x - 16, u.y - 34, 32 * hpPercent, 4);
+}
 // ===== WIN/LOSE =====
 function checkWin() {
   units.forEach(u => {
