@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #222;
+  font-family: Arial;
+}
+
+#gameCanvas {
+  display: block;
+}
+
+#ui {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+button {
+  padding: 10px 15px;
+  margin: 5px;
+  font-size: 16px;
+}
