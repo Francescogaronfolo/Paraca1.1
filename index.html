@@ -1,20 +1,18 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PARACA - Battle</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>PARACA - Battle</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
 <canvas id="gameCanvas"></canvas>
 
-<div id="ui">
-  <button onclick="spawnPlayer('rifle')">Fuciliere</button>
-  <button onclick="spawnPlayer('mg')">Mitragliere</button>
-  <button onclick="spawnPlayer('tank')">Carro</button>
+<div id="bottomUI">
+  <button id="assaultBtn" onclick="toggleAssault()">ASSALTO</button>
+  <div id="cardBar"></div>
 </div>
 
 <script src="game.js"></script>
