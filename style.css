@@ -1,23 +1,112 @@
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
   overflow: hidden;
-  background: #222;
-  font-family: Arial;
+  background: #111;
+  font-family: Arial, sans-serif;
 }
 
 #gameCanvas {
   display: block;
+  width: 100vw;
+  height: 100vh;
 }
 
-#ui {
+#bottomUI {
   position: fixed;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 104px;
+  background: rgba(18, 18, 18, 0.94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px;
+  z-index: 10;
 }
 
-button {
-  padding: 10px 15px;
-  margin: 5px;
-  font-size: 16px;
+#assaultBtn {
+  height: 78px;
+  width: 92px;
+  border: 2px solid #8b1e1e;
+  background: linear-gradient(180deg, #b91c1c, #5f1010);
+  color: white;
+  font-weight: 900;
+  font-size: 13px;
+  border-radius: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+#assaultBtn.defense {
+  border-color: #1f7a38;
+  background: linear-gradient(180deg, #16a34a, #14532d);
+}
+
+#cardBar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  max-width: calc(100vw - 120px);
+}
+
+.card {
+  width: 74px;
+  height: 78px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: #e7dfc8;
+  border: 2px solid #5b3a1f;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+}
+
+.card.ready {
+  border-color: #d6b45a;
+}
+
+.card-name {
+  font-size: 11px;
+  font-weight: 900;
+  padding-top: 8px;
+  color: #171717;
+}
+
+.card-type {
+  font-size: 10px;
+  color: #5b3a1f;
+  margin-top: 5px;
+  font-weight: 700;
+}
+
+.card-cost {
+  position: absolute;
+  left: 5px;
+  bottom: 4px;
+  font-size: 10px;
+  color: #111;
+  font-weight: 900;
+}
+
+.card-cooldown {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.68);
+  transform-origin: bottom;
+  pointer-events: none;
+}
+
+.card.ready .card-cooldown {
+  display: none;
 }
