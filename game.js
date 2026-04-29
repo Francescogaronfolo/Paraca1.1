@@ -219,17 +219,10 @@ function drawSoldier(u) {
   ctx.fillRect(0, 0, baseLeft, canvas.height);
   ctx.fillRect(baseRight, 0, canvas.width - baseRight, canvas.height);
 
-  // unità
-  units.forEach(u => {
-    ctx.fillStyle = u.side === "player" ? "blue" : "red";
-    ctx.beginPath();
-    ctx.arc(u.x, u.y, 10, 0, Math.PI * 2);
-    ctx.fill();
-
-    // barra vita
-    ctx.fillStyle = "green";
-    ctx.fillRect(u.x - 10, u.y - 15, (u.hp / 100) * 20, 3);
-  });
+// unità
+units.forEach(u => {
+  drawSoldier(u);
+});
 
   // proiettili
   ctx.fillStyle = "yellow";
