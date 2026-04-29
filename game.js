@@ -39,6 +39,7 @@ function createUnit(type, side, laneIndex) {
     rate: c.rate,
     cooldown: 0,
     side,
+    type: type,
     state: "walk",
     lane: laneIndex
   };
