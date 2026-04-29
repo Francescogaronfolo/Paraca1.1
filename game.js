@@ -112,13 +112,17 @@ function updateBullets() {
     let dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < 5) {
-      b.target.hp -= b.dmg;
-      b.hit = true;
-    } else {
-      b.x += dx / dist * 5;
-      b.y += dy / dist * 5;
-    }
+  b.target.hp -= b.dmg;
+  b.hit = true;
+
+  // effetto colpo
+  bullets.push({
+    x: b.target.x,
+    y: b.target.y,
+    fx: true,
+    life: 10
   });
+}
 
   bullets = bullets.filter(b => !b.hit);
 }
@@ -151,8 +155,19 @@ function draw() {
   // proiettili
   ctx.fillStyle = "#facc15";
   bullets.forEach(b => {
+  if (b.fx) {
+    ctx.fillStyle = "orange";
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    b.life--;
+  } else {
+    ctx.fillStyle = "#facc15";
     ctx.fillRect(b.x, b.y, 4, 4);
-  });
+  }
+});
+
+bullets = bullets.filter(b => !b.fx || b.life > 0);
 
   // HUD base (facoltativo)
   ctx.fillStyle = "white";
@@ -187,8 +202,9 @@ function drawSoldier(u) {
     ctx.strokeStyle = "#111";
     ctx.lineWidth = 2;
 
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 8, 13, 0, 0, Math.PI * 2);
+    let offset = u.state === "walk" ? Math.sin(Date.now() * 0.01) * 2 : 0;
+ctx.beginPath();
+ctx.ellipse(0, offset, 8, 13, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
@@ -218,7 +234,12 @@ function drawSoldier(u) {
     ctx.moveTo(5 * dir, -4);
     ctx.lineTo(28 * dir, -8);
     ctx.stroke();
-
+if (u.state === "shoot") {
+  ctx.fillStyle = "#facc15";
+  ctx.beginPath();
+  ctx.arc(30 * dir, -8, 4, 0, Math.PI * 2);
+  ctx.fill();
+}
     if (u.type === "mg") {
       ctx.beginPath();
       ctx.moveTo(28 * dir, -8);
