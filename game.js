@@ -4,22 +4,18 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// ===== CORSIE =====
 const lanes = [
   { y: canvas.height * 0.4 },
   { y: canvas.height * 0.5 },
   { y: canvas.height * 0.6 }
 ];
 
-// ===== UNITÀ =====
 let units = [];
 let bullets = [];
 
-// ===== BASE =====
 const baseLeft = 100;
 const baseRight = canvas.width - 100;
 
-// ===== CREAZIONE UNITÀ =====
 function createUnit(type, side, laneIndex) {
   let config = {
     rifle: { hp: 100, speed: 1, range: 120, dmg: 10, rate: 60 },
@@ -39,13 +35,12 @@ function createUnit(type, side, laneIndex) {
     rate: c.rate,
     cooldown: 0,
     side,
-    type: type,
+    type,
     state: "walk",
     lane: laneIndex
   };
 }
 
-// ===== SPAWN =====
 function spawnPlayer(type) {
   let lane = Math.floor(Math.random() * lanes.length);
   units.push(createUnit(type, "player", lane));
@@ -58,10 +53,8 @@ function spawnEnemy() {
   units.push(createUnit(type, "enemy", lane));
 }
 
-// spawn automatico nemici
 setInterval(spawnEnemy, 2000);
 
-// ===== TROVA TARGET =====
 function findTarget(unit) {
   return units.find(u =>
     u.side !== unit.side &&
@@ -70,14 +63,12 @@ function findTarget(unit) {
   );
 }
 
-// ===== UPDATE UNITÀ =====
 function updateUnits() {
   units.forEach(unit => {
     let target = findTarget(unit);
 
     if (target) {
       unit.state = "shoot";
-
       if (unit.cooldown <= 0) {
         shoot(unit, target);
         unit.cooldown = unit.rate;
@@ -90,54 +81,60 @@ function updateUnits() {
     if (unit.cooldown > 0) unit.cooldown--;
   });
 
-  // rimuovi morti
   units = units.filter(u => u.hp > 0);
 }
 
-// ===== SPARO =====
 function shoot(unit, target) {
   bullets.push({
     x: unit.x,
     y: unit.y,
     target,
-    dmg: unit.dmg
+    dmg: unit.dmg,
+    fx: false
   });
 }
 
-// ===== UPDATE BULLET =====
 function updateBullets() {
   bullets.forEach(b => {
+    if (b.fx) {
+      b.life--;
+      return;
+    }
+
     let dx = b.target.x - b.x;
     let dy = b.target.y - b.y;
     let dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < 5) {
-  b.target.hp -= b.dmg;
-  b.hit = true;
+      b.target.hp -= b.dmg;
+      b.hit = true;
 
-  // effetto colpo
-  bullets.push({
-    x: b.target.x,
-    y: b.target.y,
-    fx: true,
-    life: 10
+      bullets.push({
+        x: b.target.x,
+        y: b.target.y,
+        fx: true,
+        life: 10
+      });
+    } else {
+      b.x += dx / dist * 5;
+      b.y += dy / dist * 5;
+    }
+  });
+
+  bullets = bullets.filter(b => {
+    if (b.fx) return b.life > 0;
+    return !b.hit;
   });
 }
 
-  bullets = bullets.filter(b => !b.hit);
-}
-
 function draw() {
-  // sfondo
   ctx.fillStyle = "#3a5f3a";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // trincee
   ctx.fillStyle = "#654321";
   ctx.fillRect(0, 0, baseLeft, canvas.height);
   ctx.fillRect(baseRight, 0, canvas.width - baseRight, canvas.height);
 
-  // linee corsie (facoltativo ma utile visivamente)
   ctx.strokeStyle = "rgba(0,0,0,0.2)";
   ctx.lineWidth = 2;
   lanes.forEach(l => {
@@ -147,34 +144,28 @@ function draw() {
     ctx.stroke();
   });
 
-  // unità (soldatini)
   units.forEach(u => {
     drawSoldier(u);
   });
 
-  // proiettili
-  ctx.fillStyle = "#facc15";
   bullets.forEach(b => {
-  if (b.fx) {
-    ctx.fillStyle = "orange";
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
-    ctx.fill();
-    b.life--;
-  } else {
-    ctx.fillStyle = "#facc15";
-    ctx.fillRect(b.x, b.y, 4, 4);
-  }
-});
+    if (b.fx) {
+      ctx.fillStyle = "orange";
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = "#facc15";
+      ctx.fillRect(b.x, b.y, 4, 4);
+    }
+  });
 
-bullets = bullets.filter(b => !b.fx || b.life > 0);
-
-  // HUD base (facoltativo)
   ctx.fillStyle = "white";
   ctx.font = "16px Arial";
   ctx.fillText("PLAYER", 20, 20);
   ctx.fillText("ENEMY", canvas.width - 90, 20);
 }
+
 function drawSoldier(u) {
   const isPlayer = u.side === "player";
   const dir = isPlayer ? 1 : -1;
@@ -203,8 +194,9 @@ function drawSoldier(u) {
     ctx.lineWidth = 2;
 
     let offset = u.state === "walk" ? Math.sin(Date.now() * 0.01) * 2 : 0;
-ctx.beginPath();
-ctx.ellipse(0, offset, 8, 13, 0, 0, Math.PI * 2);
+
+    ctx.beginPath();
+    ctx.ellipse(0, offset, 8, 13, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
@@ -234,12 +226,14 @@ ctx.ellipse(0, offset, 8, 13, 0, 0, Math.PI * 2);
     ctx.moveTo(5 * dir, -4);
     ctx.lineTo(28 * dir, -8);
     ctx.stroke();
-if (u.state === "shoot") {
-  ctx.fillStyle = "#facc15";
-  ctx.beginPath();
-  ctx.arc(30 * dir, -8, 4, 0, Math.PI * 2);
-  ctx.fill();
-}
+
+    if (u.state === "shoot") {
+      ctx.fillStyle = "#facc15";
+      ctx.beginPath();
+      ctx.arc(30 * dir, -8, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     if (u.type === "mg") {
       ctx.beginPath();
       ctx.moveTo(28 * dir, -8);
@@ -259,13 +253,14 @@ if (u.state === "shoot") {
   ctx.fillStyle = hpPercent > 0.5 ? "#22c55e" : hpPercent > 0.25 ? "#facc15" : "#ef4444";
   ctx.fillRect(u.x - 16, u.y - 34, 32 * hpPercent, 4);
 }
-// ===== WIN/LOSE =====
+
 function checkWin() {
   units.forEach(u => {
     if (u.side === "player" && u.x > baseRight) {
       alert("VITTORIA");
       location.reload();
     }
+
     if (u.side === "enemy" && u.x < baseLeft) {
       alert("SCONFITTA");
       location.reload();
@@ -273,7 +268,6 @@ function checkWin() {
   });
 }
 
-// ===== LOOP =====
 function gameLoop() {
   updateUnits();
   updateBullets();
