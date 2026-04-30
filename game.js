@@ -5,28 +5,26 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 const lanes = [
-  { y: canvas.height * 0.38 },
+  { y: canvas.height * 0.36 },
   { y: canvas.height * 0.50 },
-  { y: canvas.height * 0.62 }
+  { y: canvas.height * 0.64 }
 ];
 
 let units = [];
 let bullets = [];
 let assaultMode = false;
 
-const baseLeft = 90;
-const baseRight = canvas.width - 90;
+const baseLeft = 70;
+const baseRight = canvas.width - 70;
 
-const trenchPlayer = 230;
-const trenchEnemy = canvas.width - 230;
+/* Trincee più lontane */
+const trenchPlayer = canvas.width * 0.32;
+const trenchEnemy = canvas.width * 0.68;
 
 const deck = [
-  { name: "LACAN", type: "rifle", cooldown: 2500, lastUsed: -99999 },
-  { name: "SONNY", type: "rifle", cooldown: 3000, lastUsed: -99999 },
-  { name: "CAVADDU", type: "tank", cooldown: 9500, lastUsed: -99999 },
-  { name: "MENDEL", type: "mg", cooldown: 5500, lastUsed: -99999 },
-  { name: "GAAR", type: "rifle", cooldown: 8000, lastUsed: -99999 },
-  { name: "MITRA", type: "mg", cooldown: 5000, lastUsed: -99999 }
+  { name: "RIFLE", type: "rifle", cooldown: 2500, lastUsed: -99999 },
+  { name: "MG", type: "mg", cooldown: 5500, lastUsed: -99999 },
+  { name: "TANK", type: "tank", cooldown: 9500, lastUsed: -99999 }
 ];
 
 function createUnit(type, side, laneIndex) {
@@ -132,6 +130,7 @@ function updateUnits() {
         if (unit.x <= trenchEnemy) {
           unit.x = trenchEnemy;
           unit.inTrench = true;
+          unit.state = "shoot";
         }
       }
     }
@@ -166,7 +165,7 @@ function updateBullets() {
     }
 
     const dx = b.target.x - b.x;
-    const dy = (b.target.y - 6) - b.y;
+    const dy = b.target.y - 6 - b.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < 5) {
@@ -199,10 +198,11 @@ function updateBullets() {
 
 function draw() {
   drawBackground();
-  drawTrenches();
   drawLanes();
+  drawTrenches();
 
   units.forEach(u => drawSoldier(u));
+
   drawBullets();
   drawHudText();
 }
@@ -219,35 +219,45 @@ function drawBackground() {
   }
 }
 
-function drawTrenches() {
-  ctx.fillStyle = "#654321";
-  ctx.fillRect(0, 0, baseLeft, canvas.height);
-  ctx.fillRect(baseRight, 0, canvas.width - baseRight, canvas.height);
-
-  drawTrench(trenchPlayer, "#3b2f2f", "#8b5a2b");
-  drawTrench(trenchEnemy, "#2b1f1f", "#7a2b2b");
-}
-
-function drawTrench(x, dark, light) {
-  ctx.fillStyle = dark;
-  ctx.fillRect(x - 22, 0, 44, canvas.height);
-
-  ctx.fillStyle = light;
-  for (let y = 0; y < canvas.height; y += 34) {
-    ctx.fillRect(x - 18, y + 8, 36, 10);
-  }
-}
-
 function drawLanes() {
-  ctx.strokeStyle = "rgba(0,0,0,0.18)";
+  ctx.strokeStyle = "rgba(0,0,0,0.22)";
   ctx.lineWidth = 2;
 
-  lanes.forEach(l => {
+  lanes.forEach(lane => {
     ctx.beginPath();
-    ctx.moveTo(0, l.y);
-    ctx.lineTo(canvas.width, l.y);
+    ctx.moveTo(baseLeft, lane.y);
+    ctx.lineTo(baseRight, lane.y);
     ctx.stroke();
   });
+}
+
+/* Trincee piccole: solo sulle corsie, non più dall’alto al basso */
+function drawTrenches() {
+  lanes.forEach(lane => {
+    drawSmallTrench(trenchPlayer, lane.y, "#3b2f2f", "#8b5a2b");
+    drawSmallTrench(trenchEnemy, lane.y, "#2b1f1f", "#7a2b2b");
+  });
+}
+
+function drawSmallTrench(x, y, dark, light) {
+  ctx.fillStyle = dark;
+  ctx.fillRect(x - 28, y - 18, 56, 36);
+
+  ctx.strokeStyle = light;
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+  ctx.moveTo(x - 22, y - 10);
+  ctx.lineTo(x + 22, y - 10);
+  ctx.moveTo(x - 22, y);
+  ctx.lineTo(x + 22, y);
+  ctx.moveTo(x - 22, y + 10);
+  ctx.lineTo(x + 22, y + 10);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(0,0,0,0.55)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x - 28, y - 18, 56, 36);
 }
 
 function drawBullets() {
@@ -311,6 +321,7 @@ function drawSoldier(u) {
 
     ctx.strokeStyle = "#111";
     ctx.lineWidth = 3;
+
     ctx.beginPath();
     ctx.moveTo(-4, 12);
     ctx.lineTo(-8, 22);
@@ -320,6 +331,7 @@ function drawSoldier(u) {
 
     ctx.strokeStyle = "#222";
     ctx.lineWidth = u.type === "mg" ? 4 : 3;
+
     ctx.beginPath();
     ctx.moveTo(5 * dir, -4);
     ctx.lineTo(28 * dir, -8);
@@ -343,6 +355,7 @@ function drawSoldier(u) {
   if (u.inTrench) {
     ctx.strokeStyle = "rgba(34,197,94,0.8)";
     ctx.lineWidth = 2;
+
     ctx.beginPath();
     ctx.arc(0, 0, 16, 0, Math.PI * 2);
     ctx.stroke();
@@ -380,6 +393,7 @@ function drawHudText() {
 
   ctx.font = "13px Arial";
   ctx.fillStyle = assaultMode ? "#ff7676" : "#86efac";
+
   ctx.fillText(
     assaultMode ? "MODALITÀ: ASSALTO" : "MODALITÀ: DIFESA",
     canvas.width / 2 - 70,
