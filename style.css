@@ -16,7 +16,6 @@ body {
   height: 100vh;
 }
 
-/* BARRA INFERIORE */
 #bottomUI {
   position: fixed;
   left: 0;
@@ -27,12 +26,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
   padding: 8px;
   z-index: 10;
 }
 
-/* PULSANTE ASSALTO / DIFESA */
 #assaultBtn {
   height: 78px;
   width: 92px;
@@ -52,14 +50,13 @@ body {
   background: linear-gradient(180deg, #16a34a, #14532d);
 }
 
-/* BARRA CARTE */
 #cardBar {
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   overflow-x: auto;
-  max-width: calc(100vw - 300px);
+  max-width: calc(100vw - 130px);
   padding-bottom: 4px;
 }
 
@@ -72,16 +69,11 @@ body {
   border-radius: 4px;
 }
 
-#cardBar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* CARTE */
 .card {
-  width: 74px;
+  width: 82px;
   height: 78px;
   flex: 0 0 auto;
-  border-radius: 9px;
+  border-radius: 10px;
   background: linear-gradient(180deg, #f1e6c8, #c8b98f);
   border: 2px solid #5b3a1f;
   position: relative;
@@ -98,7 +90,7 @@ body {
 }
 
 .card-name {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 900;
   padding-top: 8px;
   color: #171717;
@@ -113,9 +105,9 @@ body {
 
 .card-cost {
   position: absolute;
-  left: 5px;
-  bottom: 4px;
-  font-size: 10px;
+  left: 6px;
+  bottom: 5px;
+  font-size: 11px;
   color: #111;
   font-weight: 900;
 }
@@ -132,51 +124,11 @@ body {
   display: none;
 }
 
-/* BARRA SPAWN */
-#spawnBar {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-/* PULSANTI SPAWN */
-.spawn-btn {
-  height: 78px;
-  width: 78px;
-  border-radius: 10px;
-  border: 2px solid #4b5563;
-  background: linear-gradient(180deg, #4b5563, #1f2937);
-  color: #f9fafb;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  gap: 4px;
-  transition: transform 0.15s ease, opacity 0.2s ease, filter 0.15s ease;
-}
-
-.spawn-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  font-size: 18px;
-  font-weight: 900;
-  color: #facc15;
-}
-
-/* FEEDBACK PRESSIONE */
 .card:active,
-.spawn-btn:active,
 #assaultBtn:active {
   transform: scale(0.94);
 }
 
-/* PICCOLI MIGLIORAMENTI TOUCH */
 button {
   font-family: Arial, sans-serif;
   user-select: none;
@@ -186,32 +138,25 @@ button:hover {
   filter: brightness(1.08);
 }
 
-/* ADATTAMENTO SCHERMI PICCOLI */
 @media (max-width: 700px) {
   #bottomUI {
-    height: 112px;
-    gap: 6px;
+    height: 108px;
+    gap: 8px;
     padding: 6px;
   }
 
   #assaultBtn {
-    width: 76px;
+    width: 78px;
     height: 74px;
     font-size: 11px;
   }
 
   .card {
-    width: 66px;
+    width: 72px;
     height: 74px;
-  }
-
-  .spawn-btn {
-    width: 66px;
-    height: 74px;
-    font-size: 10px;
   }
 
   #cardBar {
-    max-width: calc(100vw - 230px);
+    max-width: calc(100vw - 95px);
   }
 }
