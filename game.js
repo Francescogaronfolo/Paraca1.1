@@ -1,13 +1,17 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+resizeCanvas();
 
 const lanes = [
-  { y: canvas.height * 0.36 },
-  { y: canvas.height * 0.50 },
-  { y: canvas.height * 0.64 }
+  { y: canvas.height * 0.34 },
+  { y: canvas.height * 0.48 },
+  { y: canvas.height * 0.62 }
 ];
 
 let units = [];
@@ -17,14 +21,13 @@ let assaultMode = false;
 const baseLeft = 70;
 const baseRight = canvas.width - 70;
 
-/* Trincee più lontane */
-const trenchPlayer = canvas.width * 0.32;
-const trenchEnemy = canvas.width * 0.68;
+const trenchPlayer = canvas.width * 0.30;
+const trenchEnemy = canvas.width * 0.70;
 
 const deck = [
-  { name: "RIFLE", type: "rifle", cooldown: 2500, lastUsed: -99999 },
-  { name: "MG", type: "mg", cooldown: 5500, lastUsed: -99999 },
-  { name: "TANK", type: "tank", cooldown: 9500, lastUsed: -99999 }
+  { name: "LACAN", type: "rifle", cooldown: 2500, lastUsed: -99999 },
+  { name: "MENDEL", type: "mg", cooldown: 5500, lastUsed: -99999 },
+  { name: "CAVADDU", type: "tank", cooldown: 9500, lastUsed: -99999 }
 ];
 
 function createUnit(type, side, laneIndex) {
@@ -46,8 +49,8 @@ function createUnit(type, side, laneIndex) {
     dmg: c.dmg,
     rate: c.rate,
     cooldown: 0,
-    side,
-    type,
+    side: side,
+    type: type,
     state: "walk",
     lane: laneIndex,
     inTrench: false
@@ -77,7 +80,7 @@ function toggleAssault() {
     btn.textContent = "DIFESA";
     btn.classList.add("defense");
 
-    units.forEach(u => {
+    units.forEach(function (u) {
       if (u.side === "player") {
         u.inTrench = false;
       }
@@ -89,15 +92,17 @@ function toggleAssault() {
 }
 
 function findTarget(unit) {
-  return units.find(u =>
-    u.side !== unit.side &&
-    u.lane === unit.lane &&
-    Math.abs(u.x - unit.x) < unit.range
-  );
+  return units.find(function (u) {
+    return (
+      u.side !== unit.side &&
+      u.lane === unit.lane &&
+      Math.abs(u.x - unit.x) < unit.range
+    );
+  });
 }
 
 function updateUnits() {
-  units.forEach(unit => {
+  units.forEach(function (unit) {
     const target = findTarget(unit);
 
     if (target) {
@@ -135,17 +140,21 @@ function updateUnits() {
       }
     }
 
-    if (unit.cooldown > 0) unit.cooldown--;
+    if (unit.cooldown > 0) {
+      unit.cooldown--;
+    }
   });
 
-  units = units.filter(u => u.hp > 0);
+  units = units.filter(function (u) {
+    return u.hp > 0;
+  });
 }
 
 function shoot(unit, target) {
   bullets.push({
     x: unit.x,
     y: unit.y - 6,
-    target,
+    target: target,
     dmg: unit.dmg,
     fx: false,
     side: unit.side
@@ -153,7 +162,7 @@ function shoot(unit, target) {
 }
 
 function updateBullets() {
-  bullets.forEach(b => {
+  bullets.forEach(function (b) {
     if (b.fx) {
       b.life--;
       return;
@@ -185,12 +194,12 @@ function updateBullets() {
         life: 9
       });
     } else {
-      b.x += dx / dist * 6;
-      b.y += dy / dist * 6;
+      b.x += (dx / dist) * 6;
+      b.y += (dy / dist) * 6;
     }
   });
 
-  bullets = bullets.filter(b => {
+  bullets = bullets.filter(function (b) {
     if (b.fx) return b.life > 0;
     return !b.hit;
   });
@@ -201,7 +210,9 @@ function draw() {
   drawLanes();
   drawTrenches();
 
-  units.forEach(u => drawSoldier(u));
+  units.forEach(function (u) {
+    drawSoldier(u);
+  });
 
   drawBullets();
   drawHudText();
@@ -220,10 +231,10 @@ function drawBackground() {
 }
 
 function drawLanes() {
-  ctx.strokeStyle = "rgba(0,0,0,0.22)";
+  ctx.strokeStyle = "rgba(0,0,0,0.25)";
   ctx.lineWidth = 2;
 
-  lanes.forEach(lane => {
+  lanes.forEach(function (lane) {
     ctx.beginPath();
     ctx.moveTo(baseLeft, lane.y);
     ctx.lineTo(baseRight, lane.y);
@@ -231,9 +242,8 @@ function drawLanes() {
   });
 }
 
-/* Trincee piccole: solo sulle corsie, non più dall’alto al basso */
 function drawTrenches() {
-  lanes.forEach(lane => {
+  lanes.forEach(function (lane) {
     drawSmallTrench(trenchPlayer, lane.y, "#3b2f2f", "#8b5a2b");
     drawSmallTrench(trenchEnemy, lane.y, "#2b1f1f", "#7a2b2b");
   });
@@ -241,27 +251,25 @@ function drawTrenches() {
 
 function drawSmallTrench(x, y, dark, light) {
   ctx.fillStyle = dark;
-  ctx.fillRect(x - 28, y - 18, 56, 36);
+  ctx.fillRect(x - 26, y - 14, 52, 28);
 
   ctx.strokeStyle = light;
   ctx.lineWidth = 3;
 
   ctx.beginPath();
-  ctx.moveTo(x - 22, y - 10);
-  ctx.lineTo(x + 22, y - 10);
-  ctx.moveTo(x - 22, y);
-  ctx.lineTo(x + 22, y);
-  ctx.moveTo(x - 22, y + 10);
-  ctx.lineTo(x + 22, y + 10);
+  ctx.moveTo(x - 20, y - 7);
+  ctx.lineTo(x + 20, y - 7);
+  ctx.moveTo(x - 20, y + 7);
+  ctx.lineTo(x + 20, y + 7);
   ctx.stroke();
 
   ctx.strokeStyle = "rgba(0,0,0,0.55)";
   ctx.lineWidth = 2;
-  ctx.strokeRect(x - 28, y - 18, 56, 36);
+  ctx.strokeRect(x - 26, y - 14, 52, 28);
 }
 
 function drawBullets() {
-  bullets.forEach(b => {
+  bullets.forEach(function (b) {
     if (b.fx) {
       ctx.fillStyle = "orange";
       ctx.beginPath();
@@ -377,10 +385,13 @@ function drawHpBar(u) {
   ctx.fillStyle = "rgba(0,0,0,0.65)";
   ctx.fillRect(bx, by, bw, bh);
 
-  ctx.fillStyle =
-    hpPercent > 0.5 ? "#22c55e" :
-    hpPercent > 0.25 ? "#facc15" :
-    "#ef4444";
+  if (hpPercent > 0.5) {
+    ctx.fillStyle = "#22c55e";
+  } else if (hpPercent > 0.25) {
+    ctx.fillStyle = "#facc15";
+  } else {
+    ctx.fillStyle = "#ef4444";
+  }
 
   ctx.fillRect(bx, by, bw * hpPercent, bh);
 }
@@ -402,7 +413,7 @@ function drawHudText() {
 }
 
 function checkWin() {
-  units.forEach(u => {
+  units.forEach(function (u) {
     if (u.side === "player" && u.x > baseRight) {
       alert("VITTORIA");
       location.reload();
@@ -421,7 +432,7 @@ function renderCardBar() {
 
   bar.innerHTML = "";
 
-  deck.forEach((card, index) => {
+  deck.forEach(function (card, index) {
     const elapsed = now - card.lastUsed;
     const ready = elapsed >= card.cooldown;
     const remaining = Math.max(0, card.cooldown - elapsed);
@@ -430,12 +441,11 @@ function renderCardBar() {
     const div = document.createElement("div");
     div.className = "card" + (ready ? " ready" : "");
 
-    div.innerHTML = `
-      <div class="card-name">${card.name}</div>
-      <div class="card-type">${card.type.toUpperCase()}</div>
-      <div class="card-cost">${Math.ceil(remaining / 1000)}s</div>
-      <div class="card-cooldown" style="transform: scaleY(${percent});"></div>
-    `;
+    div.innerHTML =
+      '<div class="card-name">' + card.name + '</div>' +
+      '<div class="card-type">' + card.type.toUpperCase() + '</div>' +
+      '<div class="card-cost">' + Math.ceil(remaining / 1000) + 's</div>' +
+      '<div class="card-cooldown" style="transform: scaleY(' + percent + ');"></div>';
 
     div.addEventListener("click", function () {
       playCard(index);
@@ -449,7 +459,9 @@ function playCard(index) {
   const card = deck[index];
   const now = Date.now();
 
-  if (now - card.lastUsed < card.cooldown) return;
+  if (now - card.lastUsed < card.cooldown) {
+    return;
+  }
 
   spawnPlayer(card.type);
   card.lastUsed = now;
@@ -461,11 +473,12 @@ function gameLoop() {
   updateBullets();
   draw();
   checkWin();
-  renderCardBar();
+
   requestAnimationFrame(gameLoop);
 }
 
 document.getElementById("assaultBtn").addEventListener("click", toggleAssault);
 
 renderCardBar();
+setInterval(renderCardBar, 200);
 gameLoop();
