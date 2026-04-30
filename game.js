@@ -380,7 +380,11 @@ function drawHudText() {
 
   ctx.font = "13px Arial";
   ctx.fillStyle = assaultMode ? "#ff7676" : "#86efac";
-  ctx.fillText(assaultMode ? "MODALITÀ: ASSALTO" : "MODALITÀ: DIFESA", canvas.width / 2 - 70, 24);
+  ctx.fillText(
+    assaultMode ? "MODALITÀ: ASSALTO" : "MODALITÀ: DIFESA",
+    canvas.width / 2 - 70,
+    24
+  );
 }
 
 function checkWin() {
@@ -443,6 +447,8 @@ function gameLoop() {
   renderCardBar();
   requestAnimationFrame(gameLoop);
 }
+
+document.getElementById("assaultBtn").onclick = toggleAssault;
 
 renderCardBar();
 gameLoop();
