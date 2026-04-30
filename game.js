@@ -1,12 +1,8 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-
-resizeCanvas();
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 const lanes = [
   { y: canvas.height * 0.34 },
@@ -17,6 +13,7 @@ const lanes = [
 let units = [];
 let bullets = [];
 let assaultMode = false;
+let enemyAssaultMode = false;
 
 const baseLeft = 70;
 const baseRight = canvas.width - 70;
@@ -63,13 +60,25 @@ function spawnPlayer(type) {
 }
 
 function spawnEnemy() {
-  const types = ["rifle", "rifle", "mg"];
+  const types = ["rifle", "rifle", "mg", "tank"];
   const type = types[Math.floor(Math.random() * types.length)];
   const lane = Math.floor(Math.random() * lanes.length);
   units.push(createUnit(type, "enemy", lane));
 }
 
 setInterval(spawnEnemy, 2200);
+
+function toggleEnemyAssault() {
+  enemyAssaultMode = !enemyAssaultMode;
+
+  units.forEach(function (u) {
+    if (u.side === "enemy") {
+      u.inTrench = false;
+    }
+  });
+}
+
+setInterval(toggleEnemyAssault, 7000);
 
 function toggleAssault() {
   assaultMode = !assaultMode;
@@ -120,20 +129,32 @@ function updateUnits() {
           unit.x += unit.speed;
         }
 
-        if (!assaultMode && unit.x >= trenchPlayer) {
+        if (!assaultMode && unit.x >= trenchPlayer && unit.x < trenchEnemy - 20) {
           unit.x = trenchPlayer;
+          unit.inTrench = true;
+          unit.state = "shoot";
+        }
+
+        if (!assaultMode && unit.x >= trenchEnemy) {
+          unit.x = trenchEnemy;
           unit.inTrench = true;
           unit.state = "shoot";
         }
       }
 
       if (unit.side === "enemy") {
-        if (!unit.inTrench) {
+        if (!unit.inTrench || enemyAssaultMode) {
           unit.x += unit.speed;
         }
 
-        if (unit.x <= trenchEnemy) {
+        if (!enemyAssaultMode && unit.x <= trenchEnemy && unit.x > trenchPlayer + 20) {
           unit.x = trenchEnemy;
+          unit.inTrench = true;
+          unit.state = "shoot";
+        }
+
+        if (!enemyAssaultMode && unit.x <= trenchPlayer) {
+          unit.x = trenchPlayer;
           unit.inTrench = true;
           unit.state = "shoot";
         }
@@ -403,12 +424,19 @@ function drawHudText() {
   ctx.fillText("ENEMY", canvas.width - 88, 24);
 
   ctx.font = "13px Arial";
-  ctx.fillStyle = assaultMode ? "#ff7676" : "#86efac";
 
+  ctx.fillStyle = assaultMode ? "#ff7676" : "#86efac";
   ctx.fillText(
-    assaultMode ? "MODALITÀ: ASSALTO" : "MODALITÀ: DIFESA",
-    canvas.width / 2 - 70,
+    assaultMode ? "TU: ASSALTO" : "TU: DIFESA",
+    canvas.width / 2 - 105,
     24
+  );
+
+  ctx.fillStyle = enemyAssaultMode ? "#ff7676" : "#86efac";
+  ctx.fillText(
+    enemyAssaultMode ? "NEMICO: ASSALTO" : "NEMICO: DIFESA",
+    canvas.width / 2 - 105,
+    42
   );
 }
 
