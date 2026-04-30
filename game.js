@@ -433,11 +433,14 @@ function renderCardBar() {
     div.innerHTML = `
       <div class="card-name">${card.name}</div>
       <div class="card-type">${card.type.toUpperCase()}</div>
-      <div class="card-cost">${Math.round(card.cooldown / 1000)}s</div>
+      <div class="card-cost">${Math.ceil(remaining / 1000)}s</div>
       <div class="card-cooldown" style="transform: scaleY(${percent});"></div>
     `;
 
-    div.onclick = () => playCard(index);
+    div.addEventListener("click", function () {
+      playCard(index);
+    });
+
     bar.appendChild(div);
   });
 }
@@ -462,7 +465,7 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-document.getElementById("assaultBtn").onclick = toggleAssault;
+document.getElementById("assaultBtn").addEventListener("click", toggleAssault);
 
 renderCardBar();
 gameLoop();
