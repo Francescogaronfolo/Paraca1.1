@@ -89,18 +89,25 @@ body {
   box-shadow: 0 0 10px rgba(214, 180, 90, 0.45);
 }
 
+.card-name,
+.card-type,
+.card-cost {
+  position: relative;
+  z-index: 2;
+}
+
 .card-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 900;
   padding-top: 8px;
-  color: #171717;
+  color: #111;
 }
 
 .card-type {
   font-size: 10px;
   color: #5b3a1f;
   margin-top: 5px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .card-cost {
@@ -115,9 +122,10 @@ body {
 .card-cooldown {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.68);
+  background: rgba(0, 0, 0, 0.55);
   transform-origin: bottom;
   pointer-events: none;
+  z-index: 1;
 }
 
 .card.ready .card-cooldown {
