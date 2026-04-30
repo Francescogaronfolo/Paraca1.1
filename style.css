@@ -16,6 +16,7 @@ body {
   height: 100vh;
 }
 
+/* BARRA INFERIORE */
 #bottomUI {
   position: fixed;
   left: 0;
@@ -31,6 +32,7 @@ body {
   z-index: 10;
 }
 
+/* PULSANTE ASSALTO / DIFESA */
 #assaultBtn {
   height: 78px;
   width: 92px;
@@ -42,6 +44,7 @@ body {
   border-radius: 10px;
   letter-spacing: 1px;
   cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 #assaultBtn.defense {
@@ -49,31 +52,49 @@ body {
   background: linear-gradient(180deg, #16a34a, #14532d);
 }
 
+/* BARRA CARTE */
 #cardBar {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: 8px;
   overflow-x: auto;
-  max-width: calc(100vw - 120px);
+  max-width: calc(100vw - 300px);
+  padding-bottom: 4px;
 }
 
+#cardBar::-webkit-scrollbar {
+  height: 6px;
+}
+
+#cardBar::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+#cardBar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* CARTE */
 .card {
   width: 74px;
   height: 78px;
   flex: 0 0 auto;
   border-radius: 9px;
-  background: #e7dfc8;
+  background: linear-gradient(180deg, #f1e6c8, #c8b98f);
   border: 2px solid #5b3a1f;
   position: relative;
   overflow: hidden;
   cursor: pointer;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 .card.ready {
   border-color: #d6b45a;
+  box-shadow: 0 0 10px rgba(214, 180, 90, 0.45);
 }
 
 .card-name {
@@ -102,11 +123,95 @@ body {
 .card-cooldown {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.68);
+  background: rgba(0, 0, 0, 0.68);
   transform-origin: bottom;
   pointer-events: none;
 }
 
 .card.ready .card-cooldown {
   display: none;
+}
+
+/* BARRA SPAWN */
+#spawnBar {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* PULSANTI SPAWN */
+.spawn-btn {
+  height: 78px;
+  width: 78px;
+  border-radius: 10px;
+  border: 2px solid #4b5563;
+  background: linear-gradient(180deg, #4b5563, #1f2937);
+  color: #f9fafb;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+  transition: transform 0.15s ease, opacity 0.2s ease, filter 0.15s ease;
+}
+
+.spawn-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  font-size: 18px;
+  font-weight: 900;
+  color: #facc15;
+}
+
+/* FEEDBACK PRESSIONE */
+.card:active,
+.spawn-btn:active,
+#assaultBtn:active {
+  transform: scale(0.94);
+}
+
+/* PICCOLI MIGLIORAMENTI TOUCH */
+button {
+  font-family: Arial, sans-serif;
+  user-select: none;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+/* ADATTAMENTO SCHERMI PICCOLI */
+@media (max-width: 700px) {
+  #bottomUI {
+    height: 112px;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  #assaultBtn {
+    width: 76px;
+    height: 74px;
+    font-size: 11px;
+  }
+
+  .card {
+    width: 66px;
+    height: 74px;
+  }
+
+  .spawn-btn {
+    width: 66px;
+    height: 74px;
+    font-size: 10px;
+  }
+
+  #cardBar {
+    max-width: calc(100vw - 230px);
+  }
 }
