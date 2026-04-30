@@ -4,6 +4,13 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+const soldierSheet = new Image();
+soldierSheet.src = "3536007bf41649b984f91dfbe3ea46e6-d9hrf29-sheet.png";
+
+const FRAME_W = 32;
+const FRAME_H = 32;
+const FRAME_COLS = 10;
+
 const lanes = [
   { y: canvas.height * 0.34 },
   { y: canvas.height * 0.48 },
@@ -50,7 +57,8 @@ function createUnit(type, side, laneIndex) {
     type: type,
     state: "walk",
     lane: laneIndex,
-    inTrench: false
+    inTrench: false,
+    born: Date.now()
   };
 }
 
@@ -174,7 +182,7 @@ function updateUnits() {
 function shoot(unit, target) {
   bullets.push({
     x: unit.x,
-    y: unit.y - 6,
+    y: unit.y - 22,
     target: target,
     dmg: unit.dmg,
     fx: false,
@@ -195,10 +203,10 @@ function updateBullets() {
     }
 
     const dx = b.target.x - b.x;
-    const dy = b.target.y - 6 - b.y;
+    const dy = b.target.y - 22 - b.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist < 5) {
+    if (dist < 6) {
       let damage = b.dmg;
 
       if (b.target.inTrench) {
@@ -210,13 +218,13 @@ function updateBullets() {
 
       bullets.push({
         x: b.target.x,
-        y: b.target.y - 8,
+        y: b.target.y - 22,
         fx: true,
         life: 9
       });
     } else {
-      b.x += (dx / dist) * 6;
-      b.y += (dy / dist) * 6;
+      b.x += (dx / dist) * 7;
+      b.y += (dy / dist) * 7;
     }
   });
 
@@ -232,7 +240,7 @@ function draw() {
   drawTrenches();
 
   units.forEach(function (u) {
-    drawSoldier(u);
+    drawUnit(u);
   });
 
   drawBullets();
@@ -298,108 +306,143 @@ function drawBullets() {
       ctx.fill();
     } else {
       ctx.fillStyle = b.side === "player" ? "#facc15" : "#ff4d4d";
-      ctx.fillRect(b.x, b.y, 5, 3);
+      ctx.fillRect(b.x, b.y, 6, 3);
     }
   });
 }
 
-function drawSoldier(u) {
+function drawUnit(u) {
+  if (u.type === "tank") {
+    drawTank(u);
+  } else {
+    drawSpriteSoldier(u);
+  }
+
+  drawHpBar(u);
+}
+
+function drawSpriteSoldier(u) {
+  if (!soldierSheet.complete) {
+    drawFallbackSoldier(u);
+    return;
+  }
+
+  const isEnemy = u.side === "enemy";
+  const scale = u.type === "mg" ? 2.15 : 2.0;
+
+  let row = 0;
+
+  if (u.state === "walk" && !u.inTrench) {
+    row = 1;
+  }
+
+  if (u.state === "shoot" || u.inTrench) {
+    row = 0;
+  }
+
+  const frameSpeed = u.state === "walk" ? 100 : 160;
+  const frame = Math.floor((Date.now() - u.born) / frameSpeed) % FRAME_COLS;
+
+  const sx = frame * FRAME_W;
+  const sy = row * FRAME_H;
+
+  const drawW = FRAME_W * scale;
+  const drawH = FRAME_H * scale;
+
+  ctx.save();
+  ctx.translate(u.x, u.y);
+
+  if (isEnemy) {
+    ctx.scale(-1, 1);
+  }
+
+  ctx.drawImage(
+    soldierSheet,
+    sx,
+    sy,
+    FRAME_W,
+    FRAME_H,
+    -drawW / 2,
+    -drawH + 8,
+    drawW,
+    drawH
+  );
+
+  if (u.type === "mg") {
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(18, -32, 18, 4);
+  }
+
+  if (u.state === "shoot") {
+    ctx.fillStyle = "#facc15";
+    ctx.beginPath();
+    ctx.arc(28, -28, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+
+  if (u.inTrench) {
+    ctx.strokeStyle = "rgba(34,197,94,0.8)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(u.x, u.y - 18, 18, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function drawTank(u) {
   const isPlayer = u.side === "player";
   const dir = isPlayer ? 1 : -1;
 
   ctx.save();
   ctx.translate(u.x, u.y);
 
-  if (u.type === "tank") {
-    ctx.fillStyle = isPlayer ? "#1f2937" : "#7f1d1d";
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 2;
+  ctx.fillStyle = isPlayer ? "#1f2937" : "#7f1d1d";
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 2;
 
-    ctx.fillRect(-24, -12, 48, 24);
-    ctx.strokeRect(-24, -12, 48, 24);
+  ctx.fillRect(-26, -18, 52, 26);
+  ctx.strokeRect(-26, -18, 52, 26);
 
-    ctx.fillRect(-9, -21, 18, 15);
-    ctx.strokeRect(-9, -21, 18, 15);
+  ctx.fillRect(-10, -30, 20, 14);
+  ctx.strokeRect(-10, -30, 20, 14);
 
+  ctx.beginPath();
+  ctx.moveTo(8 * dir, -24);
+  ctx.lineTo(42 * dir, -24);
+  ctx.stroke();
+
+  if (u.state === "shoot") {
+    ctx.fillStyle = "#facc15";
     ctx.beginPath();
-    ctx.moveTo(8 * dir, -15);
-    ctx.lineTo(38 * dir, -15);
-    ctx.stroke();
-  } else {
-    ctx.fillStyle = isPlayer ? "#1d4ed8" : "#b91c1c";
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 2;
-
-    const offset = u.state === "walk" ? Math.sin(Date.now() * 0.012) * 2 : 0;
-
-    ctx.beginPath();
-    ctx.ellipse(0, offset, 8, 13, 0, 0, Math.PI * 2);
+    ctx.arc(44 * dir, -24, 5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#d6b48c";
-    ctx.beginPath();
-    ctx.arc(0, -17, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#374151";
-    ctx.beginPath();
-    ctx.arc(0, -20, 7, Math.PI, 0);
-    ctx.fill();
-
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 3;
-
-    ctx.beginPath();
-    ctx.moveTo(-4, 12);
-    ctx.lineTo(-8, 22);
-    ctx.moveTo(4, 12);
-    ctx.lineTo(8, 22);
-    ctx.stroke();
-
-    ctx.strokeStyle = "#222";
-    ctx.lineWidth = u.type === "mg" ? 4 : 3;
-
-    ctx.beginPath();
-    ctx.moveTo(5 * dir, -4);
-    ctx.lineTo(28 * dir, -8);
-    ctx.stroke();
-
-    if (u.type === "mg") {
-      ctx.beginPath();
-      ctx.moveTo(28 * dir, -8);
-      ctx.lineTo(40 * dir, -8);
-      ctx.stroke();
-    }
-
-    if (u.state === "shoot") {
-      ctx.fillStyle = "#facc15";
-      ctx.beginPath();
-      ctx.arc(31 * dir, -8, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  if (u.inTrench) {
-    ctx.strokeStyle = "rgba(34,197,94,0.8)";
-    ctx.lineWidth = 2;
-
-    ctx.beginPath();
-    ctx.arc(0, 0, 16, 0, Math.PI * 2);
-    ctx.stroke();
   }
 
   ctx.restore();
 
-  drawHpBar(u);
+  if (u.inTrench) {
+    ctx.strokeStyle = "rgba(34,197,94,0.8)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(u.x, u.y - 10, 24, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function drawFallbackSoldier(u) {
+  ctx.fillStyle = u.side === "player" ? "#1d4ed8" : "#b91c1c";
+  ctx.beginPath();
+  ctx.arc(u.x, u.y - 20, 12, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function drawHpBar(u) {
-  const bw = u.type === "tank" ? 42 : 32;
+  const bw = u.type === "tank" ? 46 : 34;
   const bh = 4;
   const bx = u.x - bw / 2;
-  const by = u.y - 36;
+  const by = u.y - 58;
 
   const hpPercent = Math.max(0, u.hp / u.maxHp);
 
