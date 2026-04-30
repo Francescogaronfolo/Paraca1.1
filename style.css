@@ -14,7 +14,8 @@ body {
   display: block;
   width: 100vw;
   height: 100vh;
-  background: #3a5f3a;
+  background: #315c34;
+  image-rendering: pixelated;
 }
 
 #bottomUI {
