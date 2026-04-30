@@ -6,15 +6,63 @@
   <title>PARACA - Battle</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<canvas id="gameCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
-<div id="bottomUI">
-  <button id="assaultBtn" onclick="toggleAssault()">ASSALTO</button>
-  <div id="cardBar"></div>
-</div>
+  <div id="bottomUI">
+    <button id="assaultBtn">ASSALTO</button>
 
-<script src="game.js"></script>
+    <div id="cardBar"></div>
+
+    <div id="spawnBar">
+      <button id="btnRifle" class="spawn-btn">🪖 RIFLE</button>
+      <button id="btnMg" class="spawn-btn">🔫 MG</button>
+      <button id="btnTank" class="spawn-btn">🪖 TANK</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+
+  <script>
+    function handleSpawn(type, btnId, seconds) {
+      const btn = document.getElementById(btnId);
+      if (btn.disabled) return;
+
+      spawnPlayer(type);
+
+      btn.disabled = true;
+      let remaining = seconds;
+      const original = btn.innerHTML;
+
+      btn.innerHTML = remaining + "s";
+
+      const interval = setInterval(() => {
+        remaining--;
+
+        if (remaining <= 0) {
+          clearInterval(interval);
+          btn.disabled = false;
+          btn.innerHTML = original;
+        } else {
+          btn.innerHTML = remaining + "s";
+        }
+      }, 1000);
+    }
+
+    document.getElementById("btnRifle").onclick = function () {
+      handleSpawn("rifle", "btnRifle", 4);
+    };
+
+    document.getElementById("btnMg").onclick = function () {
+      handleSpawn("mg", "btnMg", 6);
+    };
+
+    document.getElementById("btnTank").onclick = function () {
+      handleSpawn("tank", "btnTank", 10);
+    };
+  </script>
+
 </body>
 </html>
