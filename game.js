@@ -5,19 +5,28 @@ canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 ctx.imageSmoothingEnabled = false;
 
-/* =====================
-   ASSET SICURI
-===================== */
+/* =====================================================
+   USA SOLO I 5 SPRITE NUOVI
+   Se un nome file è diverso su GitHub, correggilo qui.
+===================================================== */
 
-const imgRifle = new Image();
-imgRifle.src = "3536007bf41649b984f91dfbe3ea46e6-d9hrf29-sheet.png";
+const assets = {
+  malloreddu: loadImage("004D20A3-9323-486B-BF28-F5B4160871D1.png"),
+  bau: loadImage("0C023008-BF16-420A-B5FD-BDE54F51AC1C.png"),
+  gaar: loadImage("20A19C74-2669-4EC3-9156-24C050D0ECD9.png"),
+  mendel: loadImage("7D9C4DE6-410E-4723-B238-F73F04D13A29.png"),
+  lacan: loadImage("C76310A9-7FC2-4B3F-8444-A32C14BB6762.png")
+};
 
-const imgTank = new Image();
-imgTank.src = "tank_right_strip3.png";
+function loadImage(src) {
+  const img = new Image();
+  img.src = src;
+  return img;
+}
 
-/* =====================
+/* =====================================================
    MAPPA
-===================== */
+===================================================== */
 
 const lanes = [
   { y: canvas.height * 0.32 },
@@ -36,27 +45,25 @@ const baseRight = canvas.width - 70;
 const trenchPlayer = canvas.width * 0.30;
 const trenchEnemy = canvas.width * 0.70;
 
-/* =====================
-   CARTE
-===================== */
+/* =====================================================
+   5 CARTE
+===================================================== */
 
 const deck = [
-  { name: "LACAN", type: "rifle", cooldown: 2500, lastUsed: -99999 },
-  { name: "MENDEL", type: "mg", cooldown: 5500, lastUsed: -99999 },
-  { name: "GAAR", type: "sniper", cooldown: 7500, lastUsed: -99999 },
-  { name: "CAVADDU", type: "tank", cooldown: 9500, lastUsed: -99999 }
+  { name: "LACAN", type: "lacan", cooldown: 2500, lastUsed: -99999 },
+  { name: "MENDEL", type: "mendel", cooldown: 5500, lastUsed: -99999 },
+  { name: "GAAR", type: "gaar", cooldown: 7500, lastUsed: -99999 },
+  { name: "MALLO", type: "malloreddu", cooldown: 5200, lastUsed: -99999 },
+  { name: "BAU BAU", type: "bau", cooldown: 8500, lastUsed: -99999 }
 ];
-
-/* =====================
-   UNITÀ
-===================== */
 
 function createUnit(type, side, laneIndex) {
   const config = {
-    rifle: { hp: 100, speed: 0.75, range: 145, dmg: 10, rate: 58 },
-    mg: { hp: 120, speed: 0.50, range: 180, dmg: 6, rate: 18 },
-    sniper: { hp: 75, speed: 0.45, range: 280, dmg: 42, rate: 120 },
-    tank: { hp: 340, speed: 0.32, range: 220, dmg: 28, rate: 85 }
+    lacan: { hp: 100, speed: 0.75, range: 150, dmg: 10, rate: 58 },
+    mendel: { hp: 160, speed: 0.45, range: 180, dmg: 7, rate: 16 },
+    gaar: { hp: 75, speed: 0.42, range: 300, dmg: 45, rate: 120 },
+    malloreddu: { hp: 130, speed: 0.85, range: 155, dmg: 14, rate: 52 },
+    bau: { hp: 140, speed: 0.95, range: 135, dmg: 13, rate: 45 }
   };
 
   const c = config[type];
@@ -71,8 +78,8 @@ function createUnit(type, side, laneIndex) {
     dmg: c.dmg,
     rate: c.rate,
     cooldown: 0,
-    side: side,
-    type: type,
+    side,
+    type,
     state: "walk",
     lane: laneIndex,
     inTrench: false,
@@ -86,25 +93,19 @@ function spawnPlayer(type) {
 }
 
 function spawnEnemy() {
-  const types = ["rifle", "rifle", "mg", "sniper", "tank"];
+  const types = ["lacan", "mendel", "gaar", "malloreddu", "bau"];
   const type = types[Math.floor(Math.random() * types.length)];
   const lane = Math.floor(Math.random() * lanes.length);
   units.push(createUnit(type, "enemy", lane));
 }
 
-setInterval(spawnEnemy, 2400);
-
-/* =====================
-   MODALITÀ
-===================== */
+setInterval(spawnEnemy, 2600);
 
 function toggleEnemyAssault() {
   enemyAssaultMode = !enemyAssaultMode;
 
-  units.forEach(function (u) {
-    if (u.side === "enemy") {
-      u.inTrench = false;
-    }
+  units.forEach(u => {
+    if (u.side === "enemy") u.inTrench = false;
   });
 }
 
@@ -119,10 +120,8 @@ function toggleAssault() {
     btn.textContent = "DIFESA";
     btn.classList.add("defense");
 
-    units.forEach(function (u) {
-      if (u.side === "player") {
-        u.inTrench = false;
-      }
+    units.forEach(u => {
+      if (u.side === "player") u.inTrench = false;
     });
   } else {
     btn.textContent = "ASSALTO";
@@ -130,22 +129,20 @@ function toggleAssault() {
   }
 }
 
-/* =====================
+/* =====================================================
    COMBATTIMENTO
-===================== */
+===================================================== */
 
 function findTarget(unit) {
-  return units.find(function (u) {
-    return (
-      u.side !== unit.side &&
-      u.lane === unit.lane &&
-      Math.abs(u.x - unit.x) < unit.range
-    );
-  });
+  return units.find(u =>
+    u.side !== unit.side &&
+    u.lane === unit.lane &&
+    Math.abs(u.x - unit.x) < unit.range
+  );
 }
 
 function updateUnits() {
-  units.forEach(function (unit) {
+  units.forEach(unit => {
     const target = findTarget(unit);
 
     if (target) {
@@ -159,9 +156,7 @@ function updateUnits() {
       unit.state = "walk";
 
       if (unit.side === "player") {
-        if (!unit.inTrench || assaultMode) {
-          unit.x += unit.speed;
-        }
+        if (!unit.inTrench || assaultMode) unit.x += unit.speed;
 
         if (!assaultMode && unit.x >= trenchPlayer && unit.x < trenchEnemy - 20) {
           unit.x = trenchPlayer;
@@ -177,9 +172,7 @@ function updateUnits() {
       }
 
       if (unit.side === "enemy") {
-        if (!unit.inTrench || enemyAssaultMode) {
-          unit.x += unit.speed;
-        }
+        if (!unit.inTrench || enemyAssaultMode) unit.x += unit.speed;
 
         if (!enemyAssaultMode && unit.x <= trenchEnemy && unit.x > trenchPlayer + 20) {
           unit.x = trenchEnemy;
@@ -195,21 +188,17 @@ function updateUnits() {
       }
     }
 
-    if (unit.cooldown > 0) {
-      unit.cooldown--;
-    }
+    if (unit.cooldown > 0) unit.cooldown--;
   });
 
-  units = units.filter(function (u) {
-    return u.hp > 0;
-  });
+  units = units.filter(u => u.hp > 0);
 }
 
 function shoot(unit, target) {
   bullets.push({
     x: unit.x,
-    y: unit.y - 30,
-    target: target,
+    y: unit.y - 46,
+    target,
     dmg: unit.dmg,
     side: unit.side,
     fx: false
@@ -217,7 +206,7 @@ function shoot(unit, target) {
 }
 
 function updateBullets() {
-  bullets.forEach(function (b) {
+  bullets.forEach(b => {
     if (b.fx) {
       b.life--;
       return;
@@ -229,22 +218,19 @@ function updateBullets() {
     }
 
     const dx = b.target.x - b.x;
-    const dy = b.target.y - 30 - b.y;
+    const dy = b.target.y - 46 - b.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist < 7) {
+    if (dist < 8) {
       let damage = b.dmg;
-
-      if (b.target.inTrench) {
-        damage *= 0.5;
-      }
+      if (b.target.inTrench) damage *= 0.5;
 
       b.target.hp -= damage;
       b.hit = true;
 
       bullets.push({
         x: b.target.x,
-        y: b.target.y - 30,
+        y: b.target.y - 46,
         fx: true,
         life: 8
       });
@@ -254,24 +240,22 @@ function updateBullets() {
     }
   });
 
-  bullets = bullets.filter(function (b) {
+  bullets = bullets.filter(b => {
     if (b.fx) return b.life > 0;
     return !b.hit;
   });
 }
 
-/* =====================
-   DISEGNO MAPPA
-===================== */
+/* =====================================================
+   DISEGNO
+===================================================== */
 
 function draw() {
   drawBackground();
   drawLanes();
   drawTrenches();
 
-  units.forEach(function (u) {
-    drawUnit(u);
-  });
+  units.forEach(drawUnit);
 
   drawBullets();
   drawHudText();
@@ -293,7 +277,7 @@ function drawLanes() {
   ctx.strokeStyle = "rgba(0,0,0,0.25)";
   ctx.lineWidth = 2;
 
-  lanes.forEach(function (lane) {
+  lanes.forEach(lane => {
     ctx.beginPath();
     ctx.moveTo(baseLeft, lane.y);
     ctx.lineTo(baseRight, lane.y);
@@ -302,7 +286,7 @@ function drawLanes() {
 }
 
 function drawTrenches() {
-  lanes.forEach(function (lane) {
+  lanes.forEach(lane => {
     drawSmallTrench(trenchPlayer, lane.y, "#3b2f2f", "#8b5a2b");
     drawSmallTrench(trenchEnemy, lane.y, "#2b1f1f", "#7a2b2b");
   });
@@ -327,244 +311,134 @@ function drawSmallTrench(x, y, dark, light) {
   ctx.strokeRect(x - 34, y - 18, 68, 36);
 }
 
-/* =====================
-   DISEGNO UNITÀ
-===================== */
-
 function drawUnit(u) {
-  if (u.type === "rifle") {
-    drawLacan(u);
-  }
-
-  if (u.type === "sniper") {
-    drawLacan(u);
-  }
-
-  if (u.type === "mg") {
-    drawMendel(u);
-  }
-
-  if (u.type === "tank") {
-    drawCavaddu(u);
-  }
-
+  drawSpriteUnit(u);
   drawHpBar(u);
 }
 
-function drawLacan(u) {
-  if (!imgRifle.complete || imgRifle.naturalWidth === 0) {
-    drawSimpleSoldier(u, "#1d4ed8");
+function drawSpriteUnit(u) {
+  const img = assets[u.type];
+
+  if (!img || !img.complete || img.naturalWidth === 0) {
+    drawFallback(u);
     return;
   }
 
-  const frame = Math.floor((Date.now() - u.born) / 100) % 10;
-  const row = u.state === "walk" && !u.inTrench ? 1 : 0;
-
-  const sx = frame * 32;
-  const sy = row * 32;
+  const frame = getFrameForUnit(u, img);
+  const crop = getCrop(img, u.type, frame);
 
   ctx.save();
   ctx.translate(u.x, u.y);
 
-  if (u.side === "enemy") {
-    ctx.scale(-1, 1);
-  }
+  if (u.side === "enemy") ctx.scale(-1, 1);
+
+  const scale = u.type === "bau" ? 0.33 : 0.38;
+  const dw = crop.sw * scale;
+  const dh = crop.sh * scale;
 
   ctx.drawImage(
-    imgRifle,
-    sx, sy, 32, 32,
-    -48, -88,
-    96, 96
+    img,
+    crop.sx,
+    crop.sy,
+    crop.sw,
+    crop.sh,
+    -dw / 2,
+    -dh + 10,
+    dw,
+    dh
   );
-
-  if (u.state === "shoot") {
-    ctx.fillStyle = "#facc15";
-    ctx.beginPath();
-    ctx.arc(35, -47, 5, 0, Math.PI * 2);
-    ctx.fill();
-  }
 
   ctx.restore();
 
-  if (u.inTrench) {
-    drawDefenseRing(u);
-  }
+  if (u.inTrench) drawDefenseRing(u);
 }
 
-function drawMendel(u) {
-  drawSimpleSoldier(
-    u,
-    u.side === "player" ? "#111827" : "#7f1d1d",
-    true,
-    false
-  );
+function getFrameForUnit(u, img) {
+  if (u.state === "walk" && !u.inTrench) {
+    if (u.type === "bau") {
+      return Math.floor((Date.now() - u.born) / 140) % 2 === 0 ? 1 : 2;
+    }
+    return 1;
+  }
+
+  if (u.state === "shoot" || u.inTrench) {
+    return Math.floor(Date.now() / 160) % 2 === 0 ? 2 : 3;
+  }
+
+  return 0;
 }
 
-function drawCavaddu(u) {
-  if (!imgTank.complete || imgTank.naturalWidth === 0) {
-    drawSimpleTank(u);
-    return;
+/*
+  Ritaglio percentuale:
+  ignora la parte sinistra con titolo/testo e prende solo i personaggi.
+*/
+function getCrop(img, type, frame) {
+  const w = img.width;
+  const h = img.height;
+
+  let frames = 4;
+  let startX = w * 0.28;
+  let endX = w * 0.96;
+  let sy = h * 0.30;
+  let sh = h * 0.56;
+
+  if (type === "bau") {
+    frames = 5;
+    startX = w * 0.25;
+    endX = w * 0.98;
+    sy = h * 0.31;
+    sh = h * 0.55;
   }
 
-  const frame = Math.floor((Date.now() - u.born) / 180) % 3;
-  const sx = frame * 200;
+  frame = Math.min(frame, frames - 1);
 
-  ctx.save();
-  ctx.translate(u.x, u.y);
+  const areaW = endX - startX;
+  const sw = areaW / frames;
+  const sx = startX + sw * frame;
 
-  if (u.side === "enemy") {
-    ctx.scale(-1, 1);
-  }
-
-  ctx.drawImage(
-    imgTank,
-    sx, 0, 200, 200,
-    -65, -88,
-    130, 130
-  );
-
-  if (u.state === "shoot") {
-    ctx.fillStyle = "#facc15";
-    ctx.beginPath();
-    ctx.arc(70, -63, 6, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  ctx.restore();
-
-  if (u.inTrench) {
-    drawDefenseRing(u);
-  }
-}
-
-function drawSimpleSoldier(u, color, heavy, sniper) {
-  ctx.save();
-  ctx.translate(u.x, u.y);
-
-  if (u.side === "enemy") {
-    ctx.scale(-1, 1);
-  }
-
-  const walkOffset = u.state === "walk" ? Math.sin(Date.now() * 0.012) * 4 : 0;
-
-  ctx.fillStyle = color;
-  ctx.strokeStyle = "#111";
-  ctx.lineWidth = 3;
-
-  ctx.beginPath();
-  ctx.ellipse(
-    0,
-    -35 + walkOffset,
-    heavy ? 16 : 13,
-    heavy ? 24 : 21,
-    0,
-    0,
-    Math.PI * 2
-  );
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = "#d6b48c";
-  ctx.beginPath();
-  ctx.arc(0, -66 + walkOffset, 10, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.strokeStyle = "#222";
-  ctx.lineWidth = heavy ? 6 : sniper ? 4 : 3;
-
-  ctx.beginPath();
-  ctx.moveTo(10, -42 + walkOffset);
-  ctx.lineTo(sniper ? 65 : heavy ? 60 : 48, -48 + walkOffset);
-  ctx.stroke();
-
-  if (u.state === "shoot") {
-    ctx.fillStyle = "#facc15";
-    ctx.beginPath();
-    ctx.arc(sniper ? 68 : heavy ? 63 : 51, -48 + walkOffset, 5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  ctx.restore();
-
-  if (u.inTrench) {
-    drawDefenseRing(u);
-  }
-}
-
-function drawSimpleTank(u) {
-  ctx.save();
-  ctx.translate(u.x, u.y);
-
-  if (u.side === "enemy") {
-    ctx.scale(-1, 1);
-  }
-
-  ctx.fillStyle = u.side === "player" ? "#1f2937" : "#7f1d1d";
-  ctx.strokeStyle = "#111";
-  ctx.lineWidth = 3;
-
-  ctx.fillRect(-42, -38, 84, 34);
-  ctx.strokeRect(-42, -38, 84, 34);
-
-  ctx.fillRect(-16, -58, 32, 22);
-  ctx.strokeRect(-16, -58, 32, 22);
-
-  ctx.beginPath();
-  ctx.moveTo(12, -48);
-  ctx.lineTo(70, -48);
-  ctx.stroke();
-
-  if (u.state === "shoot") {
-    ctx.fillStyle = "#facc15";
-    ctx.beginPath();
-    ctx.arc(73, -48, 6, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  ctx.restore();
-
-  if (u.inTrench) {
-    drawDefenseRing(u);
-  }
+  return {
+    sx,
+    sy,
+    sw,
+    sh
+  };
 }
 
 function drawDefenseRing(u) {
   ctx.strokeStyle = "rgba(34,197,94,0.85)";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(u.x, u.y - 35, 25, 0, Math.PI * 2);
+  ctx.arc(u.x, u.y - 45, 25, 0, Math.PI * 2);
   ctx.stroke();
 }
 
+function drawFallback(u) {
+  ctx.fillStyle = u.side === "player" ? "#1d4ed8" : "#b91c1c";
+  ctx.beginPath();
+  ctx.arc(u.x, u.y - 40, 16, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 function drawHpBar(u) {
-  const bw = u.type === "tank" ? 58 : 42;
+  const bw = 48;
   const bh = 5;
   const bx = u.x - bw / 2;
-  const by = u.y - (u.type === "tank" ? 72 : 82);
+  const by = u.y - 92;
 
   const hpPercent = Math.max(0, u.hp / u.maxHp);
 
   ctx.fillStyle = "rgba(0,0,0,0.75)";
   ctx.fillRect(bx, by, bw, bh);
 
-  if (hpPercent > 0.5) {
-    ctx.fillStyle = "#22c55e";
-  } else if (hpPercent > 0.25) {
-    ctx.fillStyle = "#facc15";
-  } else {
-    ctx.fillStyle = "#ef4444";
-  }
+  if (hpPercent > 0.5) ctx.fillStyle = "#22c55e";
+  else if (hpPercent > 0.25) ctx.fillStyle = "#facc15";
+  else ctx.fillStyle = "#ef4444";
 
   ctx.fillRect(bx, by, bw * hpPercent, bh);
 }
 
-/* =====================
-   PROIETTILI / HUD
-===================== */
-
 function drawBullets() {
-  bullets.forEach(function (b) {
+  bullets.forEach(b => {
     if (b.fx) {
       ctx.fillStyle = "orange";
       ctx.beginPath();
@@ -601,7 +475,7 @@ function drawHudText() {
 }
 
 function checkWin() {
-  units.forEach(function (u) {
+  units.forEach(u => {
     if (u.side === "player" && u.x > baseRight) {
       alert("VITTORIA");
       location.reload();
@@ -614,9 +488,9 @@ function checkWin() {
   });
 }
 
-/* =====================
+/* =====================================================
    CARTE
-===================== */
+===================================================== */
 
 function renderCardBar() {
   const bar = document.getElementById("cardBar");
@@ -624,7 +498,7 @@ function renderCardBar() {
 
   bar.innerHTML = "";
 
-  deck.forEach(function (card, index) {
+  deck.forEach((card, index) => {
     const elapsed = now - card.lastUsed;
     const ready = elapsed >= card.cooldown;
     const remaining = Math.max(0, card.cooldown - elapsed);
@@ -639,10 +513,7 @@ function renderCardBar() {
       '<div class="card-cost">' + Math.ceil(remaining / 1000) + 's</div>' +
       '<div class="card-cooldown" style="transform: scaleY(' + percent + ');"></div>';
 
-    div.addEventListener("click", function () {
-      playCard(index);
-    });
-
+    div.addEventListener("click", () => playCard(index));
     bar.appendChild(div);
   });
 }
@@ -651,18 +522,16 @@ function playCard(index) {
   const card = deck[index];
   const now = Date.now();
 
-  if (now - card.lastUsed < card.cooldown) {
-    return;
-  }
+  if (now - card.lastUsed < card.cooldown) return;
 
   spawnPlayer(card.type);
   card.lastUsed = now;
   renderCardBar();
 }
 
-/* =====================
+/* =====================================================
    LOOP
-===================== */
+===================================================== */
 
 function gameLoop() {
   updateUnits();
