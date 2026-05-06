@@ -96,6 +96,10 @@ html, body {
   border-bottom: 8px solid rgba(0,0,0,0.22);
 }
 
+#upgradeBar.hidden {
+  display: none;
+}
+
 .upgrade {
   display: flex;
   align-items: center;
@@ -108,11 +112,6 @@ html, body {
   text-shadow: 0 2px 3px rgba(0,0,0,0.75);
   border-right: 3px solid rgba(0,0,0,0.25);
   cursor: pointer;
-}
-
-.upgrade::after {
-  content: "";
-  position: absolute;
 }
 
 .upgrade.locked {
@@ -195,6 +194,21 @@ html, body {
 
 .buildSlot.selected {
   outline: 3px solid #ffe033;
+}
+
+.buildHint {
+  position: fixed;
+  left: 50%;
+  bottom: 122px;
+  transform: translateX(-50%);
+  z-index: 50;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.65);
+  color: white;
+  font-weight: 900;
+  font-size: 13px;
+  display: none;
 }
 
 /* JOYSTICKS */
@@ -296,5 +310,10 @@ html, body {
     width: 45px;
     height: 45px;
     font-size: 21px;
+  }
+
+  .buildHint {
+    bottom: 110px;
+    font-size: 11px;
   }
 }
