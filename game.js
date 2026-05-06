@@ -1,549 +1,487 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+const scoreEl = document.getElementById("score");
+const levelEl = document.getElementById("level");
+const xpEl = document.getElementById("xp");
+const xpNeedEl = document.getElementById("xpNeed");
+const xpFillEl = document.getElementById("xpFill");
+const pointsEl = document.getElementById("points");
+const upgrades = document.querySelectorAll(".upgrade");
+
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
-ctx.imageSmoothingEnabled = false;
 
-/* =====================================================
-   USA SOLO I 5 SPRITE NUOVI
-   Se un nome file è diverso su GitHub, correggilo qui.
-===================================================== */
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
 
-const assets = {
-  malloreddu: loadImage("004D20A3-9323-486B-BF28-F5B4160871D1.png"),
-  bau: loadImage("0C023008-BF16-420A-B5FD-BDE54F51AC1C.png"),
-  gaar: loadImage("20A19C74-2669-4EC3-9156-24C050D0ECD9.png"),
-  mendel: loadImage("7D9C4DE6-410E-4723-B238-F73F04D13A29.png"),
-  lacan: loadImage("C76310A9-7FC2-4B3F-8444-A32C14BB6762.png")
+const world = {
+  width: 4000,
+  height: 4000
 };
 
-function loadImage(src) {
-  const img = new Image();
-  img.src = src;
-  return img;
+const camera = {
+  x: 0,
+  y: 0
+};
+
+const player = {
+  x: world.width / 2,
+  y: world.height / 2,
+  r: 24,
+  angle: 0,
+  speed: 4,
+  hp: 100,
+  maxHp: 100,
+  damage: 18,
+  reload: 260,
+  bulletSpeed: 11,
+  lastShot: 0,
+  level: 1,
+  xp: 0,
+  xpNeed: 100,
+  score: 0,
+  upgradePoints: 0
+};
+
+const keys = {};
+const bullets = [];
+const shapes = [];
+
+let mouse = {
+  x: canvas.width / 2,
+  y: canvas.height / 2,
+  down: false
+};
+
+let joystick = {
+  active: false,
+  dx: 0,
+  dy: 0
+};
+
+function rand(min, max) {
+  return Math.random() * (max - min) + min;
 }
 
-/* =====================================================
-   MAPPA
-===================================================== */
+function dist(a, b, c, d) {
+  return Math.hypot(a - c, b - d);
+}
 
-const lanes = [
-  { y: canvas.height * 0.32 },
-  { y: canvas.height * 0.48 },
-  { y: canvas.height * 0.64 }
-];
+function spawnShape() {
+  const typeRoll = Math.random();
 
-let units = [];
-let bullets = [];
-let assaultMode = false;
-let enemyAssaultMode = false;
+  let type = "square";
+  let hp = 35;
+  let value = 25;
+  let size = 26;
 
-const baseLeft = 70;
-const baseRight = canvas.width - 70;
+  if (typeRoll > 0.72) {
+    type = "triangle";
+    hp = 55;
+    value = 45;
+    size = 30;
+  }
 
-const trenchPlayer = canvas.width * 0.30;
-const trenchEnemy = canvas.width * 0.70;
+  if (typeRoll > 0.92) {
+    type = "pentagon";
+    hp = 120;
+    value = 110;
+    size = 42;
+  }
 
-/* =====================================================
-   5 CARTE
-===================================================== */
-
-const deck = [
-  { name: "LACAN", type: "lacan", cooldown: 2500, lastUsed: -99999 },
-  { name: "MENDEL", type: "mendel", cooldown: 5500, lastUsed: -99999 },
-  { name: "GAAR", type: "gaar", cooldown: 7500, lastUsed: -99999 },
-  { name: "MALLO", type: "malloreddu", cooldown: 5200, lastUsed: -99999 },
-  { name: "BAU BAU", type: "bau", cooldown: 8500, lastUsed: -99999 }
-];
-
-function createUnit(type, side, laneIndex) {
-  const config = {
-    lacan: { hp: 100, speed: 0.75, range: 150, dmg: 10, rate: 58 },
-    mendel: { hp: 160, speed: 0.45, range: 180, dmg: 7, rate: 16 },
-    gaar: { hp: 75, speed: 0.42, range: 300, dmg: 45, rate: 120 },
-    malloreddu: { hp: 130, speed: 0.85, range: 155, dmg: 14, rate: 52 },
-    bau: { hp: 140, speed: 0.95, range: 135, dmg: 13, rate: 45 }
-  };
-
-  const c = config[type];
-
-  return {
-    x: side === "player" ? baseLeft : baseRight,
-    y: lanes[laneIndex].y,
-    hp: c.hp,
-    maxHp: c.hp,
-    speed: side === "player" ? c.speed : -c.speed,
-    range: c.range,
-    dmg: c.dmg,
-    rate: c.rate,
-    cooldown: 0,
-    side,
+  shapes.push({
+    x: rand(120, world.width - 120),
+    y: rand(120, world.height - 120),
+    size,
+    hp,
+    maxHp: hp,
+    value,
     type,
-    state: "walk",
-    lane: laneIndex,
-    inTrench: false,
-    born: Date.now()
-  };
-}
-
-function spawnPlayer(type) {
-  const lane = Math.floor(Math.random() * lanes.length);
-  units.push(createUnit(type, "player", lane));
-}
-
-function spawnEnemy() {
-  const types = ["lacan", "mendel", "gaar", "malloreddu", "bau"];
-  const type = types[Math.floor(Math.random() * types.length)];
-  const lane = Math.floor(Math.random() * lanes.length);
-  units.push(createUnit(type, "enemy", lane));
-}
-
-setInterval(spawnEnemy, 2600);
-
-function toggleEnemyAssault() {
-  enemyAssaultMode = !enemyAssaultMode;
-
-  units.forEach(u => {
-    if (u.side === "enemy") u.inTrench = false;
+    rot: rand(0, Math.PI * 2)
   });
 }
 
-setInterval(toggleEnemyAssault, 7000);
+for (let i = 0; i < 90; i++) spawnShape();
 
-function toggleAssault() {
-  assaultMode = !assaultMode;
+function addXP(amount) {
+  player.xp += amount;
+  player.score += amount;
 
-  const btn = document.getElementById("assaultBtn");
-
-  if (assaultMode) {
-    btn.textContent = "DIFESA";
-    btn.classList.add("defense");
-
-    units.forEach(u => {
-      if (u.side === "player") u.inTrench = false;
-    });
-  } else {
-    btn.textContent = "ASSALTO";
-    btn.classList.remove("defense");
+  while (player.xp >= player.xpNeed) {
+    player.xp -= player.xpNeed;
+    player.level++;
+    player.upgradePoints++;
+    player.xpNeed = Math.floor(player.xpNeed * 1.22);
   }
+
+  updateHUD();
 }
 
-/* =====================================================
-   COMBATTIMENTO
-===================================================== */
+function updateHUD() {
+  scoreEl.textContent = player.score;
+  levelEl.textContent = player.level;
+  xpEl.textContent = player.xp;
+  xpNeedEl.textContent = player.xpNeed;
+  pointsEl.textContent = player.upgradePoints;
+  xpFillEl.style.width = `${(player.xp / player.xpNeed) * 100}%`;
 
-function findTarget(unit) {
-  return units.find(u =>
-    u.side !== unit.side &&
-    u.lane === unit.lane &&
-    Math.abs(u.x - unit.x) < unit.range
-  );
+  upgrades.forEach(btn => {
+    if (player.upgradePoints > 0) btn.classList.add("available");
+    else btn.classList.remove("available");
+  });
 }
 
-function updateUnits() {
-  units.forEach(unit => {
-    const target = findTarget(unit);
+upgrades.forEach(btn => {
+  btn.addEventListener("click", () => {
+    if (player.upgradePoints <= 0) return;
 
-    if (target) {
-      unit.state = "shoot";
+    const type = btn.dataset.upgrade;
 
-      if (unit.cooldown <= 0) {
-        shoot(unit, target);
-        unit.cooldown = unit.rate;
-      }
-    } else {
-      unit.state = "walk";
-
-      if (unit.side === "player") {
-        if (!unit.inTrench || assaultMode) unit.x += unit.speed;
-
-        if (!assaultMode && unit.x >= trenchPlayer && unit.x < trenchEnemy - 20) {
-          unit.x = trenchPlayer;
-          unit.inTrench = true;
-          unit.state = "shoot";
-        }
-
-        if (!assaultMode && unit.x >= trenchEnemy) {
-          unit.x = trenchEnemy;
-          unit.inTrench = true;
-          unit.state = "shoot";
-        }
-      }
-
-      if (unit.side === "enemy") {
-        if (!unit.inTrench || enemyAssaultMode) unit.x += unit.speed;
-
-        if (!enemyAssaultMode && unit.x <= trenchEnemy && unit.x > trenchPlayer + 20) {
-          unit.x = trenchEnemy;
-          unit.inTrench = true;
-          unit.state = "shoot";
-        }
-
-        if (!enemyAssaultMode && unit.x <= trenchPlayer) {
-          unit.x = trenchPlayer;
-          unit.inTrench = true;
-          unit.state = "shoot";
-        }
-      }
+    if (type === "damage") player.damage += 5;
+    if (type === "reload") player.reload = Math.max(80, player.reload - 28);
+    if (type === "speed") player.speed += 0.35;
+    if (type === "hp") {
+      player.maxHp += 20;
+      player.hp = player.maxHp;
     }
 
-    if (unit.cooldown > 0) unit.cooldown--;
+    player.upgradePoints--;
+    updateHUD();
   });
+});
 
-  units = units.filter(u => u.hp > 0);
+function shoot() {
+  const now = performance.now();
+  if (now - player.lastShot < player.reload) return;
+
+  player.lastShot = now;
+
+  bullets.push({
+    x: player.x + Math.cos(player.angle) * 30,
+    y: player.y + Math.sin(player.angle) * 30,
+    vx: Math.cos(player.angle) * player.bulletSpeed,
+    vy: Math.sin(player.angle) * player.bulletSpeed,
+    r: 7,
+    damage: player.damage,
+    life: 80
+  });
 }
 
-function shoot(unit, target) {
-  bullets.push({
-    x: unit.x,
-    y: unit.y - 46,
-    target,
-    dmg: unit.dmg,
-    side: unit.side,
-    fx: false
-  });
+function updatePlayer() {
+  let mx = 0;
+  let my = 0;
+
+  if (keys["w"] || keys["ArrowUp"]) my -= 1;
+  if (keys["s"] || keys["ArrowDown"]) my += 1;
+  if (keys["a"] || keys["ArrowLeft"]) mx -= 1;
+  if (keys["d"] || keys["ArrowRight"]) mx += 1;
+
+  mx += joystick.dx;
+  my += joystick.dy;
+
+  const len = Math.hypot(mx, my);
+  if (len > 0) {
+    mx /= len;
+    my /= len;
+    player.x += mx * player.speed;
+    player.y += my * player.speed;
+  }
+
+  player.x = Math.max(player.r, Math.min(world.width - player.r, player.x));
+  player.y = Math.max(player.r, Math.min(world.height - player.r, player.y));
+
+  const worldMouseX = mouse.x + camera.x;
+  const worldMouseY = mouse.y + camera.y;
+  player.angle = Math.atan2(worldMouseY - player.y, worldMouseX - player.x);
+
+  if (mouse.down) shoot();
 }
 
 function updateBullets() {
-  bullets.forEach(b => {
-    if (b.fx) {
-      b.life--;
-      return;
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+
+    b.x += b.vx;
+    b.y += b.vy;
+    b.life--;
+
+    if (
+      b.life <= 0 ||
+      b.x < 0 ||
+      b.y < 0 ||
+      b.x > world.width ||
+      b.y > world.height
+    ) {
+      bullets.splice(i, 1);
+      continue;
     }
 
-    if (!b.target || b.target.hp <= 0) {
-      b.hit = true;
-      return;
+    for (let j = shapes.length - 1; j >= 0; j--) {
+      const s = shapes[j];
+
+      if (dist(b.x, b.y, s.x, s.y) < b.r + s.size) {
+        s.hp -= b.damage;
+        bullets.splice(i, 1);
+
+        if (s.hp <= 0) {
+          addXP(s.value);
+          shapes.splice(j, 1);
+          spawnShape();
+        }
+
+        break;
+      }
     }
-
-    const dx = b.target.x - b.x;
-    const dy = b.target.y - 46 - b.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist < 8) {
-      let damage = b.dmg;
-      if (b.target.inTrench) damage *= 0.5;
-
-      b.target.hp -= damage;
-      b.hit = true;
-
-      bullets.push({
-        x: b.target.x,
-        y: b.target.y - 46,
-        fx: true,
-        life: 8
-      });
-    } else {
-      b.x += (dx / dist) * 8;
-      b.y += (dy / dist) * 8;
-    }
-  });
-
-  bullets = bullets.filter(b => {
-    if (b.fx) return b.life > 0;
-    return !b.hit;
-  });
-}
-
-/* =====================================================
-   DISEGNO
-===================================================== */
-
-function draw() {
-  drawBackground();
-  drawLanes();
-  drawTrenches();
-
-  units.forEach(drawUnit);
-
-  drawBullets();
-  drawHudText();
-}
-
-function drawBackground() {
-  ctx.fillStyle = "#315c34";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "rgba(0,0,0,0.08)";
-  for (let i = 0; i < 90; i++) {
-    const x = (i * 83) % canvas.width;
-    const y = (i * 47) % canvas.height;
-    ctx.fillRect(x, y, 3, 3);
   }
 }
 
-function drawLanes() {
-  ctx.strokeStyle = "rgba(0,0,0,0.25)";
-  ctx.lineWidth = 2;
+function updateCamera() {
+  camera.x = player.x - canvas.width / 2;
+  camera.y = player.y - canvas.height / 2;
 
-  lanes.forEach(lane => {
+  camera.x = Math.max(0, Math.min(world.width - canvas.width, camera.x));
+  camera.y = Math.max(0, Math.min(world.height - canvas.height, camera.y));
+}
+
+function drawGrid() {
+  const grid = 60;
+
+  ctx.strokeStyle = "rgba(0,0,0,0.08)";
+  ctx.lineWidth = 1;
+
+  const startX = Math.floor(camera.x / grid) * grid;
+  const startY = Math.floor(camera.y / grid) * grid;
+
+  for (let x = startX; x < camera.x + canvas.width; x += grid) {
     ctx.beginPath();
-    ctx.moveTo(baseLeft, lane.y);
-    ctx.lineTo(baseRight, lane.y);
+    ctx.moveTo(x - camera.x, 0);
+    ctx.lineTo(x - camera.x, canvas.height);
     ctx.stroke();
-  });
-}
-
-function drawTrenches() {
-  lanes.forEach(lane => {
-    drawSmallTrench(trenchPlayer, lane.y, "#3b2f2f", "#8b5a2b");
-    drawSmallTrench(trenchEnemy, lane.y, "#2b1f1f", "#7a2b2b");
-  });
-}
-
-function drawSmallTrench(x, y, dark, light) {
-  ctx.fillStyle = dark;
-  ctx.fillRect(x - 34, y - 18, 68, 36);
-
-  ctx.strokeStyle = light;
-  ctx.lineWidth = 3;
-
-  ctx.beginPath();
-  ctx.moveTo(x - 26, y - 9);
-  ctx.lineTo(x + 26, y - 9);
-  ctx.moveTo(x - 26, y + 9);
-  ctx.lineTo(x + 26, y + 9);
-  ctx.stroke();
-
-  ctx.strokeStyle = "rgba(0,0,0,0.6)";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x - 34, y - 18, 68, 36);
-}
-
-function drawUnit(u) {
-  drawSpriteUnit(u);
-  drawHpBar(u);
-}
-
-function drawSpriteUnit(u) {
-  const img = assets[u.type];
-
-  if (!img || !img.complete || img.naturalWidth === 0) {
-    drawFallback(u);
-    return;
   }
 
-  const frame = getFrameForUnit(u, img);
-  const crop = getCrop(img, u.type, frame);
+  for (let y = startY; y < camera.y + canvas.height; y += grid) {
+    ctx.beginPath();
+    ctx.moveTo(0, y - camera.y);
+    ctx.lineTo(canvas.width, y - camera.y);
+    ctx.stroke();
+  }
+}
+
+function drawShape(s) {
+  const x = s.x - camera.x;
+  const y = s.y - camera.y;
 
   ctx.save();
-  ctx.translate(u.x, u.y);
+  ctx.translate(x, y);
+  ctx.rotate(s.rot);
 
-  if (u.side === "enemy") ctx.scale(-1, 1);
+  if (s.type === "square") {
+    ctx.fillStyle = "#f4d03f";
+    ctx.strokeStyle = "#b7950b";
+    ctx.lineWidth = 4;
+    ctx.fillRect(-s.size, -s.size, s.size * 2, s.size * 2);
+    ctx.strokeRect(-s.size, -s.size, s.size * 2, s.size * 2);
+  }
 
-  const scale = u.type === "bau" ? 0.33 : 0.38;
-  const dw = crop.sw * scale;
-  const dh = crop.sh * scale;
+  if (s.type === "triangle") {
+    ctx.fillStyle = "#e74c3c";
+    ctx.strokeStyle = "#922b21";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, -s.size);
+    ctx.lineTo(s.size, s.size);
+    ctx.lineTo(-s.size, s.size);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
 
-  ctx.drawImage(
-    img,
-    crop.sx,
-    crop.sy,
-    crop.sw,
-    crop.sh,
-    -dw / 2,
-    -dh + 10,
-    dw,
-    dh
-  );
+  if (s.type === "pentagon") {
+    ctx.fillStyle = "#8e44ad";
+    ctx.strokeStyle = "#512e5f";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + i * Math.PI * 2 / 5;
+      const px = Math.cos(a) * s.size;
+      const py = Math.sin(a) * s.size;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
 
   ctx.restore();
 
-  if (u.inTrench) drawDefenseRing(u);
+  const barW = s.size * 2;
+  const hpPerc = s.hp / s.maxHp;
+
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fillRect(x - s.size, y + s.size + 8, barW, 6);
+
+  ctx.fillStyle = "#43d17a";
+  ctx.fillRect(x - s.size, y + s.size + 8, barW * hpPerc, 6);
 }
 
-function getFrameForUnit(u, img) {
-  if (u.state === "walk" && !u.inTrench) {
-    if (u.type === "bau") {
-      return Math.floor((Date.now() - u.born) / 140) % 2 === 0 ? 1 : 2;
-    }
-    return 1;
-  }
+function drawPlayer() {
+  const x = player.x - camera.x;
+  const y = player.y - camera.y;
 
-  if (u.state === "shoot" || u.inTrench) {
-    return Math.floor(Date.now() / 160) % 2 === 0 ? 2 : 3;
-  }
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(player.angle);
 
-  return 0;
-}
+  ctx.fillStyle = "#4aa3ff";
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 4;
 
-/*
-  Ritaglio percentuale:
-  ignora la parte sinistra con titolo/testo e prende solo i personaggi.
-*/
-function getCrop(img, type, frame) {
-  const w = img.width;
-  const h = img.height;
-
-  let frames = 4;
-  let startX = w * 0.28;
-  let endX = w * 0.96;
-  let sy = h * 0.30;
-  let sh = h * 0.56;
-
-  if (type === "bau") {
-    frames = 5;
-    startX = w * 0.25;
-    endX = w * 0.98;
-    sy = h * 0.31;
-    sh = h * 0.55;
-  }
-
-  frame = Math.min(frame, frames - 1);
-
-  const areaW = endX - startX;
-  const sw = areaW / frames;
-  const sx = startX + sw * frame;
-
-  return {
-    sx,
-    sy,
-    sw,
-    sh
-  };
-}
-
-function drawDefenseRing(u) {
-  ctx.strokeStyle = "rgba(34,197,94,0.85)";
-  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(u.x, u.y - 45, 25, 0, Math.PI * 2);
-  ctx.stroke();
-}
-
-function drawFallback(u) {
-  ctx.fillStyle = u.side === "player" ? "#1d4ed8" : "#b91c1c";
-  ctx.beginPath();
-  ctx.arc(u.x, u.y - 40, 16, 0, Math.PI * 2);
+  ctx.arc(0, 0, player.r, 0, Math.PI * 2);
   ctx.fill();
-}
+  ctx.stroke();
 
-function drawHpBar(u) {
-  const bw = 48;
-  const bh = 5;
-  const bx = u.x - bw / 2;
-  const by = u.y - 92;
+  ctx.fillStyle = "#222";
+  ctx.fillRect(10, -6, 34, 12);
 
-  const hpPercent = Math.max(0, u.hp / u.maxHp);
+  ctx.restore();
 
-  ctx.fillStyle = "rgba(0,0,0,0.75)";
-  ctx.fillRect(bx, by, bw, bh);
-
-  if (hpPercent > 0.5) ctx.fillStyle = "#22c55e";
-  else if (hpPercent > 0.25) ctx.fillStyle = "#facc15";
-  else ctx.fillStyle = "#ef4444";
-
-  ctx.fillRect(bx, by, bw * hpPercent, bh);
+  ctx.fillStyle = "#111";
+  ctx.font = "bold 13px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("PARACA", x, y - 34);
 }
 
 function drawBullets() {
   bullets.forEach(b => {
-    if (b.fx) {
-      ctx.fillStyle = "orange";
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, 7, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.fillStyle = b.side === "player" ? "#facc15" : "#ff4d4d";
-      ctx.fillRect(b.x, b.y, 8, 3);
-    }
+    ctx.fillStyle = "#222";
+    ctx.beginPath();
+    ctx.arc(b.x - camera.x, b.y - camera.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
   });
 }
 
-function drawHudText() {
-  ctx.fillStyle = "white";
-  ctx.font = "16px Arial";
-  ctx.fillText("PLAYER", 20, 24);
-  ctx.fillText("ENEMY", canvas.width - 88, 24);
-
-  ctx.font = "13px Arial";
-
-  ctx.fillStyle = assaultMode ? "#ff7676" : "#86efac";
-  ctx.fillText(
-    assaultMode ? "TU: ASSALTO" : "TU: DIFESA",
-    canvas.width / 2 - 105,
-    24
-  );
-
-  ctx.fillStyle = enemyAssaultMode ? "#ff7676" : "#86efac";
-  ctx.fillText(
-    enemyAssaultMode ? "NEMICO: ASSALTO" : "NEMICO: DIFESA",
-    canvas.width / 2 - 105,
-    42
-  );
+function drawWorldBorder() {
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  ctx.lineWidth = 8;
+  ctx.strokeRect(-camera.x, -camera.y, world.width, world.height);
 }
 
-function checkWin() {
-  units.forEach(u => {
-    if (u.side === "player" && u.x > baseRight) {
-      alert("VITTORIA");
-      location.reload();
-    }
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
+  drawWorldBorder();
 
-    if (u.side === "enemy" && u.x < baseLeft) {
-      alert("SCONFITTA");
-      location.reload();
-    }
-  });
+  shapes.forEach(drawShape);
+  drawBullets();
+  drawPlayer();
 }
 
-/* =====================================================
-   CARTE
-===================================================== */
-
-function renderCardBar() {
-  const bar = document.getElementById("cardBar");
-  const now = Date.now();
-
-  bar.innerHTML = "";
-
-  deck.forEach((card, index) => {
-    const elapsed = now - card.lastUsed;
-    const ready = elapsed >= card.cooldown;
-    const remaining = Math.max(0, card.cooldown - elapsed);
-    const percent = remaining / card.cooldown;
-
-    const div = document.createElement("div");
-    div.className = "card" + (ready ? " ready" : "");
-
-    div.innerHTML =
-      '<div class="card-name">' + card.name + '</div>' +
-      '<div class="card-type">' + card.type.toUpperCase() + '</div>' +
-      '<div class="card-cost">' + Math.ceil(remaining / 1000) + 's</div>' +
-      '<div class="card-cooldown" style="transform: scaleY(' + percent + ');"></div>';
-
-    div.addEventListener("click", () => playCard(index));
-    bar.appendChild(div);
-  });
-}
-
-function playCard(index) {
-  const card = deck[index];
-  const now = Date.now();
-
-  if (now - card.lastUsed < card.cooldown) return;
-
-  spawnPlayer(card.type);
-  card.lastUsed = now;
-  renderCardBar();
-}
-
-/* =====================================================
-   LOOP
-===================================================== */
-
-function gameLoop() {
-  updateUnits();
+function loop() {
+  updatePlayer();
   updateBullets();
+  updateCamera();
   draw();
-  checkWin();
 
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(loop);
 }
 
-document.getElementById("assaultBtn").addEventListener("click", toggleAssault);
+document.addEventListener("keydown", e => {
+  keys[e.key] = true;
+});
 
-renderCardBar();
-setInterval(renderCardBar, 200);
-gameLoop();
+document.addEventListener("keyup", e => {
+  keys[e.key] = false;
+});
+
+canvas.addEventListener("mousemove", e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+});
+
+canvas.addEventListener("mousedown", () => {
+  mouse.down = true;
+});
+
+canvas.addEventListener("mouseup", () => {
+  mouse.down = false;
+});
+
+canvas.addEventListener("touchmove", e => {
+  const t = e.touches[0];
+  mouse.x = t.clientX;
+  mouse.y = t.clientY;
+}, { passive: true });
+
+const shootBtn = document.getElementById("shootBtn");
+
+shootBtn.addEventListener("touchstart", e => {
+  e.preventDefault();
+  mouse.down = true;
+});
+
+shootBtn.addEventListener("touchend", e => {
+  e.preventDefault();
+  mouse.down = false;
+});
+
+shootBtn.addEventListener("mousedown", () => {
+  mouse.down = true;
+});
+
+shootBtn.addEventListener("mouseup", () => {
+  mouse.down = false;
+});
+
+const joyBase = document.getElementById("joyBase");
+const joyStick = document.getElementById("joyStick");
+
+joyBase.addEventListener("touchstart", e => {
+  e.preventDefault();
+  joystick.active = true;
+});
+
+joyBase.addEventListener("touchmove", e => {
+  e.preventDefault();
+
+  const rect = joyBase.getBoundingClientRect();
+  const t = e.touches[0];
+
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+
+  let dx = t.clientX - cx;
+  let dy = t.clientY - cy;
+
+  const max = 42;
+  const len = Math.hypot(dx, dy);
+
+  if (len > max) {
+    dx = dx / len * max;
+    dy = dy / len * max;
+  }
+
+  joystick.dx = dx / max;
+  joystick.dy = dy / max;
+
+  joyStick.style.left = `${42 + dx}px`;
+  joyStick.style.top = `${42 + dy}px`;
+}, { passive: false });
+
+joyBase.addEventListener("touchend", e => {
+  e.preventDefault();
+
+  joystick.active = false;
+  joystick.dx = 0;
+  joystick.dy = 0;
+
+  joyStick.style.left = "42px";
+  joyStick.style.top = "42px";
+});
+
+updateHUD();
+loop();
