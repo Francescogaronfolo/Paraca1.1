@@ -1,46 +1,174 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width,
+        initial-scale=1.0,
+        user-scalable=no">
+
   <title>PARACA ARENA</title>
-  <link rel="stylesheet" href="style.css" />
+
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
+  <!-- CANVAS -->
   <canvas id="gameCanvas"></canvas>
 
-  <div id="hud">
-    <div id="title">PARACA ARENA</div>
-    <div id="stats">
+  <!-- HUD -->
+  <div id="hudTopLeft">
+
+    <div id="logo">
+      PARACA ARENA
+    </div>
+
+    <div id="playerInfo">
       <div>Score: <span id="score">0</span></div>
       <div>Livello: <span id="level">1</span></div>
-      <div>XP: <span id="xp">0</span>/<span id="xpNeed">100</span></div>
+      <div>Skill Points: <span id="skillPoints">0</span></div>
+    </div>
+
+  </div>
+
+  <!-- CLASSIFICA -->
+  <div id="leaderboard">
+
+    <div class="leaderTitle">
+      CLASSIFICA
+    </div>
+
+    <div class="leaderItem">
+      <span>1.</span>
+      <span>Ghost</span>
+      <span>12400</span>
+    </div>
+
+    <div class="leaderItem">
+      <span>2.</span>
+      <span>Wolf</span>
+      <span>9200</span>
+    </div>
+
+    <div class="leaderItem">
+      <span>3.</span>
+      <span>Alpha</span>
+      <span>8100</span>
+    </div>
+
+  </div>
+
+  <!-- UPGRADE BAR -->
+  <div id="upgradeBar">
+
+    <div class="upgrade upgrade1"
+         data-upgrade="speed">
+      MOV SPEED
+    </div>
+
+    <div class="upgrade upgrade2"
+         data-upgrade="reload">
+      RELOAD
+    </div>
+
+    <div class="upgrade upgrade3"
+         data-upgrade="damage">
+      DAMAGE
+    </div>
+
+    <div class="upgrade upgrade4"
+         data-upgrade="penetration">
+      PENETRATION
+    </div>
+
+    <div class="upgrade upgrade5"
+         data-upgrade="bulletSpeed">
+      BULLET SPEED
+    </div>
+
+    <div class="upgrade upgrade6"
+         data-upgrade="bodyDamage">
+      BODY DAMAGE
+    </div>
+
+    <div class="upgrade upgrade7"
+         data-upgrade="maxHealth">
+      MAX HEALTH
+    </div>
+
+    <div class="upgrade upgrade8"
+         data-upgrade="regen">
+      HEALTH REGEN
+    </div>
+
+  </div>
+
+  <!-- XP BAR -->
+  <div id="xpContainer">
+
+    <div id="xpText">
+      LVL 1
     </div>
 
     <div id="xpBar">
       <div id="xpFill"></div>
     </div>
+
   </div>
 
-  <div id="upgradePanel">
-    <div class="upgrade" data-upgrade="damage">Danno +</div>
-    <div class="upgrade" data-upgrade="reload">Cadenza +</div>
-    <div class="upgrade" data-upgrade="speed">Velocità +</div>
-    <div class="upgrade" data-upgrade="hp">Corazza +</div>
-  </div>
+  <!-- BUILD BAR -->
+  <div id="buildBar">
 
-  <div id="upgradePoints">
-    Punti upgrade: <span id="points">0</span>
-  </div>
-
-  <div id="mobileControls">
-    <div id="joyBase">
-      <div id="joyStick"></div>
+    <div class="buildSlot"
+         data-build="wall">
+      🪵
     </div>
-    <button id="shootBtn">FUOCO</button>
+
+    <div class="buildSlot"
+         data-build="wire">
+      🧵
+    </div>
+
+    <div class="buildSlot"
+         data-build="mine">
+      💣
+    </div>
+
+    <div class="buildSlot"
+         data-build="turret">
+      🔫
+    </div>
+
+    <div class="buildSlot"
+         data-build="drone">
+      ✈️
+    </div>
+
+  </div>
+
+  <!-- MOBILE JOYSTICKS -->
+  <div id="mobileUI">
+
+    <!-- movimento -->
+    <div class="joystick"
+         id="moveJoystick">
+
+      <div class="stick"
+           id="moveStick"></div>
+    </div>
+
+    <!-- mira -->
+    <div class="joystick"
+         id="aimJoystick">
+
+      <div class="stick"
+           id="aimStick"></div>
+    </div>
+
   </div>
 
   <script src="game.js"></script>
+
 </body>
 </html>
