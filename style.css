@@ -6,13 +6,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html,
-body {
+html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #d8d8d8;
   font-family: Arial, Helvetica, sans-serif;
+  background: #78945d;
 }
 
 #gameCanvas {
@@ -21,150 +20,281 @@ body {
   width: 100vw;
   height: 100vh;
   display: block;
-  background: #d8d8d8;
+  background: #78945d;
 }
 
-#hud {
+/* HUD */
+
+#hudTopLeft {
   position: fixed;
   left: 14px;
   top: 12px;
-  z-index: 10;
-  color: #222;
-  text-shadow: 0 1px 0 rgba(255,255,255,0.7);
+  z-index: 20;
+  color: white;
+  text-shadow: 0 2px 3px rgba(0,0,0,0.55);
 }
 
-#title {
-  font-size: 26px;
+#logo {
+  font-size: 23px;
   font-weight: 900;
   letter-spacing: 1px;
 }
 
-#stats {
+#playerInfo {
   margin-top: 6px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
+}
+
+/* CLASSIFICA */
+
+#leaderboard {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  width: 190px;
+  z-index: 20;
+  background: rgba(30,30,30,0.55);
+  border-radius: 10px;
+  padding: 8px;
+  color: white;
+  font-weight: 800;
+  text-shadow: 0 2px 3px rgba(0,0,0,0.6);
+}
+
+.leaderTitle {
+  text-align: center;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.leaderItem {
+  display: grid;
+  grid-template-columns: 25px 1fr 55px;
+  gap: 4px;
+  padding: 4px 6px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.13);
+  font-size: 12px;
+}
+
+/* UPGRADE BAR */
+
+#upgradeBar {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1180px, 86vw);
+  height: 86px;
+  z-index: 25;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  border-left: 3px solid rgba(0,0,0,0.28);
+  border-right: 3px solid rgba(0,0,0,0.28);
+  border-bottom: 8px solid rgba(0,0,0,0.22);
+}
+
+.upgrade {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px;
+  font-size: 13px;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 2px 3px rgba(0,0,0,0.75);
+  border-right: 3px solid rgba(0,0,0,0.25);
+  cursor: pointer;
+}
+
+.upgrade::after {
+  content: "";
+  position: absolute;
+}
+
+.upgrade.locked {
+  filter: grayscale(0.65);
+  opacity: 0.58;
+}
+
+.upgrade1 { background: rgba(79, 218, 218, 0.72); }
+.upgrade2 { background: rgba(137, 218, 98, 0.72); }
+.upgrade3 { background: rgba(232, 94, 96, 0.72); }
+.upgrade4 { background: rgba(232, 197, 78, 0.72); }
+.upgrade5 { background: rgba(89, 140, 228, 0.72); }
+.upgrade6 { background: rgba(130, 82, 205, 0.72); }
+.upgrade7 { background: rgba(218, 86, 214, 0.72); }
+.upgrade8 { background: rgba(215, 157, 103, 0.72); }
+
+/* XP */
+
+#xpContainer {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: min(420px, 72vw);
+  text-align: center;
+}
+
+#xpText {
+  color: white;
+  font-size: 16px;
+  font-weight: 900;
+  text-shadow: 0 2px 3px rgba(0,0,0,0.65);
+  margin-bottom: 4px;
 }
 
 #xpBar {
-  margin-top: 8px;
-  width: 210px;
-  height: 12px;
+  width: 100%;
+  height: 18px;
+  background: rgba(30,30,30,0.70);
+  border: 3px solid rgba(0,0,0,0.45);
   border-radius: 20px;
-  background: rgba(40,40,40,0.35);
   overflow: hidden;
-  border: 2px solid rgba(30,30,30,0.45);
 }
 
 #xpFill {
   width: 0%;
   height: 100%;
-  background: #43d17a;
+  background: #ffe033;
 }
 
-#upgradePanel {
+/* BUILD BAR */
+
+#buildBar {
   position: fixed;
-  top: 14px;
   left: 50%;
+  bottom: 58px;
   transform: translateX(-50%);
-  z-index: 12;
+  z-index: 28;
   display: flex;
   gap: 8px;
+  padding: 8px;
+  background: rgba(0,0,0,0.22);
+  border-radius: 12px;
 }
 
-.upgrade {
-  min-width: 105px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(20,20,20,0.78);
+.buildSlot {
+  width: 54px;
+  height: 54px;
+  border-radius: 9px;
+  background: rgba(40,40,40,0.55);
   color: white;
-  font-weight: 900;
-  font-size: 13px;
-  text-align: center;
-  border: 2px solid rgba(255,255,255,0.35);
-}
-
-.upgrade.available {
-  background: #ffe033;
-  color: #111;
-  border-color: #111;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255,255,255,0.24);
   cursor: pointer;
 }
 
-#upgradePoints {
-  position: fixed;
-  right: 16px;
-  top: 14px;
-  z-index: 12;
-  background: rgba(20,20,20,0.75);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-weight: 900;
-  font-size: 14px;
+.buildSlot.selected {
+  outline: 3px solid #ffe033;
 }
 
-#mobileControls {
+/* JOYSTICKS */
+
+#mobileUI {
   position: fixed;
   inset: 0;
+  z-index: 40;
   pointer-events: none;
-  z-index: 20;
 }
 
-#joyBase {
+.joystick {
   position: absolute;
-  left: 28px;
-  bottom: 34px;
-  width: 130px;
-  height: 130px;
+  bottom: 36px;
+  width: 138px;
+  height: 138px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.17);
-  border: 2px solid rgba(0,0,0,0.16);
+  background: rgba(0,0,0,0.18);
+  border: 3px solid rgba(0,0,0,0.15);
   pointer-events: auto;
 }
 
-#joyStick {
-  position: absolute;
-  left: 42px;
-  top: 42px;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.36);
+#moveJoystick {
+  left: 32px;
 }
 
-#shootBtn {
-  position: absolute;
+#aimJoystick {
   right: 32px;
-  bottom: 48px;
-  width: 94px;
-  height: 94px;
-  border-radius: 50%;
-  border: 3px solid rgba(0,0,0,0.35);
-  background: rgba(255,224,51,0.9);
-  font-weight: 900;
-  font-size: 16px;
-  color: #111;
-  pointer-events: auto;
 }
 
-@media (max-width: 700px) {
-  #upgradePanel {
-    top: 88px;
-    width: 96vw;
-    flex-wrap: wrap;
-    justify-content: center;
+.stick {
+  position: absolute;
+  left: 43px;
+  top: 43px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.38);
+  border: 2px solid rgba(255,255,255,0.18);
+}
+
+/* MOBILE */
+
+@media (max-width: 850px) {
+  #upgradeBar {
+    width: 100vw;
+    height: 72px;
   }
 
   .upgrade {
-    min-width: 42vw;
+    font-size: 9px;
+    padding: 3px;
   }
 
-  #upgradePoints {
-    right: 10px;
-    top: 12px;
+  #leaderboard {
+    width: 145px;
+    font-size: 11px;
   }
 
-  #title {
+  .leaderItem {
+    font-size: 10px;
+    grid-template-columns: 18px 1fr 42px;
+  }
+
+  #logo {
+    font-size: 17px;
+  }
+
+  #playerInfo {
+    font-size: 12px;
+  }
+
+  .joystick {
+    width: 118px;
+    height: 118px;
+    bottom: 28px;
+  }
+
+  #moveJoystick {
+    left: 20px;
+  }
+
+  #aimJoystick {
+    right: 20px;
+  }
+
+  .stick {
+    left: 37px;
+    top: 37px;
+    width: 44px;
+    height: 44px;
+  }
+
+  #buildBar {
+    bottom: 54px;
+  }
+
+  .buildSlot {
+    width: 45px;
+    height: 45px;
     font-size: 21px;
   }
 }
