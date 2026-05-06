@@ -6,6 +6,11 @@ const levelEl = document.getElementById("level");
 const skillPointsEl = document.getElementById("skillPoints");
 const xpTextEl = document.getElementById("xpText");
 const xpFillEl = document.getElementById("xpFill");
+const upgradeBar = document.getElementById("upgradeBar");
+
+const buildHint = document.createElement("div");
+buildHint.className = "buildHint";
+document.body.appendChild(buildHint);
 
 canvas.width = innerWidth;
 canvas.height = innerHeight;
@@ -56,6 +61,15 @@ const buildings = [];
 const drones = [];
 
 let selectedBuild = null;
+let wireStart = null;
+
+const buildCosts = {
+  wall: 200,
+  wire: 180,
+  mine: 160,
+  turret: 350,
+  drone: 500
+};
 
 let mouse = {
   x: canvas.width / 2,
@@ -63,7 +77,7 @@ let mouse = {
   down: false
 };
 
-const moveJoy = { dx: 0, dy: 0 };
+const moveJoy = { dx: 0, dy: 0, active: false };
 const aimJoy = { dx: 0, dy: 0, active: false };
 
 function rand(min, max) {
@@ -108,17 +122,24 @@ function spawnObject() {
   });
 }
 
-for (let i = 0; i < 95; i++) spawnObject();
+for (let i = 0; i < 95; i++) {
+  spawnObject();
+}
 
 function updateHUD() {
   scoreEl.textContent = Math.floor(player.score);
   levelEl.textContent = player.level;
   skillPointsEl.textContent = player.skillPoints;
+
   xpTextEl.textContent = `LVL ${player.level}`;
   xpFillEl.style.width = `${(player.xp / player.xpNeed) * 100}%`;
 
+  const hasPoints = player.skillPoints > 0;
+
+  upgradeBar.classList.toggle("hidden", !hasPoints);
+
   document.querySelectorAll(".upgrade").forEach(u => {
-    u.classList.toggle("locked", player.skillPoints <= 0);
+    u.classList.toggle("locked", !hasPoints);
   });
 }
 
@@ -142,17 +163,38 @@ document.querySelectorAll(".upgrade").forEach(btn => {
 
     const up = btn.dataset.upgrade;
 
-    if (up === "speed") player.speed += 0.35;
-    if (up === "reload") player.reload = Math.max(75, player.reload - 28);
-    if (up === "damage") player.damage += 5;
-    if (up === "penetration") player.penetration += 1;
-    if (up === "bulletSpeed") player.bulletSpeed += 1.2;
-    if (up === "bodyDamage") player.bodyDamage += 4;
+    if (up === "speed") {
+      player.speed += 0.35;
+    }
+
+    if (up === "reload") {
+      player.reload = Math.max(75, player.reload - 28);
+    }
+
+    if (up === "damage") {
+      player.damage += 5;
+    }
+
+    if (up === "penetration") {
+      player.penetration += 1;
+    }
+
+    if (up === "bulletSpeed") {
+      player.bulletSpeed += 1.2;
+    }
+
+    if (up === "bodyDamage") {
+      player.bodyDamage += 4;
+    }
+
     if (up === "maxHealth") {
       player.maxHealth += 25;
       player.health = player.maxHealth;
     }
-    if (up === "regen") player.regen += 0.025;
+
+    if (up === "regen") {
+      player.regen += 0.025;
+    }
 
     player.skillPoints--;
     updateHUD();
@@ -162,13 +204,173 @@ document.querySelectorAll(".upgrade").forEach(btn => {
 document.querySelectorAll(".buildSlot").forEach(slot => {
   slot.addEventListener("click", () => {
     document.querySelectorAll(".buildSlot").forEach(s => s.classList.remove("selected"));
+
+    const type = slot.dataset.build;
+
+    if (selectedBuild === type) {
+      selectedBuild = null;
+      wireStart = null;
+      buildHint.style.display = "none";
+      return;
+    }
+
+    selectedBuild = type;
+    wireStart = null;
     slot.classList.add("selected");
-    selectedBuild = slot.dataset.build;
+
+    if (type === "wall") {
+      buildHint.textContent = "Tocca la mappa per piazzare un muro";
+    }
+
+    if (type === "mine") {
+      buildHint.textContent = "Tocca la mappa per piazzare una mina";
+    }
+
+    if (type === "drone") {
+      buildHint.textContent = "Tocca la mappa per comprare un drone orbitante";
+    }
+
+    if (type === "wire") {
+      buildHint.textContent = "Tocca il primo punto del filo spinato";
+    }
+
+    if (type === "turret") {
+      buildHint.textContent = "Torretta non ancora attiva";
+    }
+
+    buildHint.style.display = "block";
   });
 });
 
+function spend(cost) {
+  if (player.score < cost) {
+    buildHint.textContent = `Punti insufficienti: servono ${cost}`;
+    buildHint.style.display = "block";
+    return false;
+  }
+
+  player.score -= cost;
+  updateHUD();
+  return true;
+}
+
+function placeBuild(worldX, worldY) {
+  if (!selectedBuild) return false;
+
+  const cost = buildCosts[selectedBuild] || 200;
+
+  if (selectedBuild === "drone") {
+    if (!spend(cost)) return true;
+
+    drones.push({
+      angle: Math.random() * Math.PI * 2,
+      dist: 76,
+      r: 10,
+      damage: 16,
+      cooldown: 0,
+      x: player.x,
+      y: player.y
+    });
+
+    buildHint.textContent = "Drone acquistato";
+    return true;
+  }
+
+  if (selectedBuild === "mine") {
+    if (!spend(cost)) return true;
+
+    buildings.push({
+      type: "mine",
+      x: worldX,
+      y: worldY,
+      r: 18,
+      armed: true,
+      timer: 0,
+      exploded: false
+    });
+
+    buildHint.textContent = "Mina piazzata";
+    return true;
+  }
+
+  if (selectedBuild === "wall") {
+    if (!spend(cost)) return true;
+
+    buildings.push({
+      type: "wall",
+      x: worldX,
+      y: worldY,
+      hp: 250,
+      maxHp: 250,
+      w: 64,
+      h: 26
+    });
+
+    buildHint.textContent = "Muro piazzato";
+    return true;
+  }
+
+  if (selectedBuild === "wire") {
+    if (!wireStart) {
+      wireStart = {
+        x: worldX,
+        y: worldY
+      };
+
+      buildHint.textContent = "Tocca il secondo punto del filo spinato";
+      return true;
+    }
+
+    const maxLen = 210;
+
+    let dx = worldX - wireStart.x;
+    let dy = worldY - wireStart.y;
+
+    const len = Math.hypot(dx, dy);
+
+    if (len > maxLen) {
+      dx = dx / len * maxLen;
+      dy = dy / len * maxLen;
+    }
+
+    if (!spend(cost)) return true;
+
+    buildings.push({
+      type: "wire",
+      x1: wireStart.x,
+      y1: wireStart.y,
+      x2: wireStart.x + dx,
+      y2: wireStart.y + dy,
+      slow: 0.45
+    });
+
+    wireStart = null;
+    buildHint.textContent = "Filo spinato piazzato";
+    return true;
+  }
+
+  if (selectedBuild === "turret") {
+    if (!spend(cost)) return true;
+
+    buildings.push({
+      type: "turret",
+      x: worldX,
+      y: worldY,
+      r: 24,
+      cooldown: 0,
+      damage: 14
+    });
+
+    buildHint.textContent = "Torretta piazzata";
+    return true;
+  }
+
+  return false;
+}
+
 function shoot() {
   const now = performance.now();
+
   if (now - player.lastShot < player.reload) return;
 
   player.lastShot = now;
@@ -197,11 +399,23 @@ function updatePlayer() {
   mx += moveJoy.dx;
   my += moveJoy.dy;
 
+  for (const b of buildings) {
+    if (b.type === "wire") {
+      const d = pointToSegmentDistance(player.x, player.y, b.x1, b.y1, b.x2, b.y2);
+
+      if (d < 36) {
+        mx *= b.slow;
+        my *= b.slow;
+      }
+    }
+  }
+
   const len = Math.hypot(mx, my);
 
   if (len > 0) {
     mx /= len;
     my /= len;
+
     player.x += mx * player.speed;
     player.y += my * player.speed;
   }
@@ -215,11 +429,47 @@ function updatePlayer() {
   } else {
     const wx = mouse.x + camera.x;
     const wy = mouse.y + camera.y;
+
     player.angle = Math.atan2(wy - player.y, wx - player.x);
-    if (mouse.down) shoot();
+
+    if (mouse.down) {
+      shoot();
+    }
   }
 
   player.health = Math.min(player.maxHealth, player.health + player.regen);
+}
+
+function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+  const A = px - x1;
+  const B = py - y1;
+  const C = x2 - x1;
+  const D = y2 - y1;
+
+  const dot = A * C + B * D;
+  const lenSq = C * C + D * D;
+
+  let param = -1;
+
+  if (lenSq !== 0) {
+    param = dot / lenSq;
+  }
+
+  let xx;
+  let yy;
+
+  if (param < 0) {
+    xx = x1;
+    yy = y1;
+  } else if (param > 1) {
+    xx = x2;
+    yy = y2;
+  } else {
+    xx = x1 + param * C;
+    yy = y1 + param * D;
+  }
+
+  return distance(px, py, xx, yy);
 }
 
 function updateBullets() {
@@ -230,7 +480,13 @@ function updateBullets() {
     b.y += b.vy;
     b.life--;
 
-    if (b.life <= 0) {
+    if (
+      b.life <= 0 ||
+      b.x < 0 ||
+      b.y < 0 ||
+      b.x > world.width ||
+      b.y > world.height
+    ) {
       bullets.splice(i, 1);
       continue;
     }
@@ -258,6 +514,131 @@ function updateBullets() {
   }
 }
 
+function updateMines() {
+  for (let i = buildings.length - 1; i >= 0; i--) {
+    const b = buildings[i];
+
+    if (b.type !== "mine") continue;
+
+    if (b.exploded) {
+      b.timer++;
+
+      if (b.timer > 22) {
+        buildings.splice(i, 1);
+      }
+
+      continue;
+    }
+
+    for (let j = objects.length - 1; j >= 0; j--) {
+      const o = objects[j];
+
+      if (distance(b.x, b.y, o.x, o.y) < 95) {
+        b.exploded = true;
+
+        for (let k = objects.length - 1; k >= 0; k--) {
+          const target = objects[k];
+
+          if (distance(b.x, b.y, target.x, target.y) < 115) {
+            target.hp -= 120;
+
+            if (target.hp <= 0) {
+              addXP(target.value);
+              objects.splice(k, 1);
+              spawnObject();
+            }
+          }
+        }
+
+        break;
+      }
+    }
+  }
+}
+
+function updateDrones() {
+  drones.forEach((d, index) => {
+    d.angle += 0.035;
+
+    const offset = index * ((Math.PI * 2) / Math.max(1, drones.length));
+
+    d.x = player.x + Math.cos(d.angle + offset) * d.dist;
+    d.y = player.y + Math.sin(d.angle + offset) * d.dist;
+
+    d.cooldown--;
+
+    if (d.cooldown <= 0 && objects.length > 0) {
+      let nearest = null;
+      let best = Infinity;
+
+      objects.forEach(o => {
+        const dis = distance(d.x, d.y, o.x, o.y);
+
+        if (dis < best) {
+          best = dis;
+          nearest = o;
+        }
+      });
+
+      if (nearest && best < 420) {
+        const ang = Math.atan2(nearest.y - d.y, nearest.x - d.x);
+
+        bullets.push({
+          x: d.x,
+          y: d.y,
+          vx: Math.cos(ang) * 9,
+          vy: Math.sin(ang) * 9,
+          r: 5,
+          damage: d.damage,
+          pierce: 1,
+          life: 70
+        });
+
+        d.cooldown = 50;
+      }
+    }
+  });
+}
+
+function updateTurrets() {
+  buildings.forEach(t => {
+    if (t.type !== "turret") return;
+
+    t.cooldown--;
+
+    if (t.cooldown > 0) return;
+
+    let nearest = null;
+    let best = Infinity;
+
+    objects.forEach(o => {
+      const dis = distance(t.x, t.y, o.x, o.y);
+
+      if (dis < best) {
+        best = dis;
+        nearest = o;
+      }
+    });
+
+    if (nearest && best < 480) {
+      const ang = Math.atan2(nearest.y - t.y, nearest.x - t.x);
+
+      bullets.push({
+        x: t.x,
+        y: t.y,
+        vx: Math.cos(ang) * 8,
+        vy: Math.sin(ang) * 8,
+        r: 5,
+        damage: t.damage,
+        pierce: 1,
+        life: 70
+      });
+
+      t.cooldown = 65;
+    }
+  });
+}
+
 function updateCamera() {
   camera.x = player.x - canvas.width / 2;
   camera.y = player.y - canvas.height / 2;
@@ -271,6 +652,7 @@ function drawGrid() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const grid = 70;
+
   ctx.strokeStyle = "rgba(40,70,35,0.25)";
   ctx.lineWidth = 3;
 
@@ -304,6 +686,7 @@ function drawObject(o) {
     ctx.fillStyle = "#b8893d";
     ctx.strokeStyle = "#6b4e1f";
     ctx.lineWidth = 5;
+
     ctx.fillRect(-o.size, -o.size, o.size * 2, o.size * 2);
     ctx.strokeRect(-o.size, -o.size, o.size * 2, o.size * 2);
 
@@ -320,6 +703,7 @@ function drawObject(o) {
     ctx.fillStyle = "#7d7f37";
     ctx.strokeStyle = "#4b4d20";
     ctx.lineWidth = 5;
+
     ctx.beginPath();
     ctx.arc(0, 0, o.size, 0, Math.PI * 2);
     ctx.fill();
@@ -330,14 +714,21 @@ function drawObject(o) {
     ctx.fillStyle = "#6d6d6d";
     ctx.strokeStyle = "#3d3d3d";
     ctx.lineWidth = 6;
+
     ctx.beginPath();
+
     for (let i = 0; i < 6; i++) {
       const a = -Math.PI / 2 + i * Math.PI * 2 / 6;
       const px = Math.cos(a) * o.size;
       const py = Math.sin(a) * o.size;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
+
+      if (i === 0) {
+        ctx.moveTo(px, py);
+      } else {
+        ctx.lineTo(px, py);
+      }
     }
+
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -350,6 +741,119 @@ function drawObject(o) {
 
   ctx.fillStyle = "#7dff80";
   ctx.fillRect(x - o.size, y + o.size + 8, o.size * 2 * (o.hp / o.maxHp), 7);
+}
+
+function drawBuildings() {
+  buildings.forEach(b => {
+    if (b.type === "wall") {
+      const x = b.x - camera.x;
+      const y = b.y - camera.y;
+
+      ctx.fillStyle = "#5b4027";
+      ctx.strokeStyle = "#26170b";
+      ctx.lineWidth = 4;
+
+      ctx.fillRect(x - b.w / 2, y - b.h / 2, b.w, b.h);
+      ctx.strokeRect(x - b.w / 2, y - b.h / 2, b.w, b.h);
+
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.beginPath();
+      ctx.moveTo(x - b.w / 2 + 8, y);
+      ctx.lineTo(x + b.w / 2 - 8, y);
+      ctx.stroke();
+    }
+
+    if (b.type === "mine") {
+      const x = b.x - camera.x;
+      const y = b.y - camera.y;
+
+      ctx.fillStyle = b.exploded ? "rgba(255,120,0,0.45)" : "#222";
+      ctx.strokeStyle = "#ffcc00";
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      ctx.arc(x, y, b.exploded ? 70 : b.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      if (!b.exploded) {
+        ctx.fillStyle = "#ffcc00";
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (b.type === "wire") {
+      ctx.strokeStyle = "#2a2a2a";
+      ctx.lineWidth = 5;
+
+      ctx.beginPath();
+      ctx.moveTo(b.x1 - camera.x, b.y1 - camera.y);
+
+      const segments = 8;
+
+      for (let i = 1; i <= segments; i++) {
+        const t = i / segments;
+        const x = b.x1 + (b.x2 - b.x1) * t;
+        const y = b.y1 + (b.y2 - b.y1) * t;
+        const wave = Math.sin(t * Math.PI * 8) * 10;
+
+        ctx.lineTo(x - camera.x, y - camera.y + wave);
+      }
+
+      ctx.stroke();
+
+      ctx.strokeStyle = "#b8b8b8";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    if (b.type === "turret") {
+      const x = b.x - camera.x;
+      const y = b.y - camera.y;
+
+      ctx.fillStyle = "#3d3d3d";
+      ctx.strokeStyle = "#1a1a1a";
+      ctx.lineWidth = 4;
+
+      ctx.beginPath();
+      ctx.arc(x, y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#222";
+      ctx.fillRect(x + 5, y - 5, 34, 10);
+    }
+  });
+
+  if (wireStart) {
+    ctx.fillStyle = "#fff";
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 3;
+
+    ctx.beginPath();
+    ctx.arc(wireStart.x - camera.x, wireStart.y - camera.y, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function drawDrones() {
+  drones.forEach(d => {
+    ctx.fillStyle = "#7c4dff";
+    ctx.strokeStyle = "#2b175f";
+    ctx.lineWidth = 3;
+
+    ctx.beginPath();
+    ctx.moveTo(d.x - camera.x + 13, d.y - camera.y);
+    ctx.lineTo(d.x - camera.x - 10, d.y - camera.y - 9);
+    ctx.lineTo(d.x - camera.x - 10, d.y - camera.y + 9);
+    ctx.closePath();
+
+    ctx.fill();
+    ctx.stroke();
+  });
 }
 
 function drawPlayer() {
@@ -372,6 +876,7 @@ function drawPlayer() {
   ctx.fillStyle = "#454545";
   ctx.strokeStyle = "#222";
   ctx.lineWidth = 3;
+
   ctx.fillRect(14, -7, 38, 14);
   ctx.strokeRect(14, -7, 38, 14);
 
@@ -394,20 +899,6 @@ function drawBullets() {
   });
 }
 
-function drawBuildings() {
-  buildings.forEach(b => {
-    const x = b.x - camera.x;
-    const y = b.y - camera.y;
-
-    ctx.fillStyle = "#4b3927";
-    ctx.strokeStyle = "#22170e";
-    ctx.lineWidth = 4;
-
-    ctx.fillRect(x - 22, y - 22, 44, 44);
-    ctx.strokeRect(x - 22, y - 22, 44, 44);
-  });
-}
-
 function drawBorder() {
   ctx.strokeStyle = "rgba(0,0,0,0.35)";
   ctx.lineWidth = 8;
@@ -420,14 +911,19 @@ function draw() {
   objects.forEach(drawObject);
   drawBuildings();
   drawBullets();
+  drawDrones();
   drawPlayer();
 }
 
 function loop() {
   updatePlayer();
   updateBullets();
+  updateMines();
+  updateDrones();
+  updateTurrets();
   updateCamera();
   draw();
+
   requestAnimationFrame(loop);
 }
 
@@ -445,25 +941,42 @@ canvas.addEventListener("mousemove", e => {
 });
 
 canvas.addEventListener("mousedown", e => {
-  mouse.down = true;
+  const worldX = e.clientX + camera.x;
+  const worldY = e.clientY + camera.y;
 
-  if (selectedBuild && player.score >= 200) {
-    buildings.push({
-      type: selectedBuild,
-      x: mouse.x + camera.x,
-      y: mouse.y + camera.y,
-      hp: 200
-    });
-    player.score -= 200;
-    updateHUD();
+  if (selectedBuild) {
+    placeBuild(worldX, worldY);
+    return;
   }
+
+  mouse.down = true;
 });
 
 canvas.addEventListener("mouseup", () => {
   mouse.down = false;
 });
 
-function setupJoystick(baseId, stickId, target, isAim = false) {
+canvas.addEventListener("touchstart", e => {
+  const t = e.touches[0];
+  const worldX = t.clientX + camera.x;
+  const worldY = t.clientY + camera.y;
+
+  if (selectedBuild) {
+    e.preventDefault();
+    placeBuild(worldX, worldY);
+  }
+}, { passive: false });
+
+canvas.addEventListener("touchmove", e => {
+  const t = e.touches[0];
+
+  if (!t) return;
+
+  mouse.x = t.clientX;
+  mouse.y = t.clientY;
+}, { passive: true });
+
+function setupJoystick(baseId, stickId, target) {
   const base = document.getElementById(baseId);
   const stick = document.getElementById(stickId);
 
@@ -471,6 +984,7 @@ function setupJoystick(baseId, stickId, target, isAim = false) {
     target.dx = 0;
     target.dy = 0;
     target.active = false;
+
     stick.style.left = "";
     stick.style.top = "";
   }
@@ -512,10 +1026,15 @@ function setupJoystick(baseId, stickId, target, isAim = false) {
     e.preventDefault();
     reset();
   }, { passive: false });
+
+  base.addEventListener("touchcancel", e => {
+    e.preventDefault();
+    reset();
+  }, { passive: false });
 }
 
-setupJoystick("moveJoystick", "moveStick", moveJoy, false);
-setupJoystick("aimJoystick", "aimStick", aimJoy, true);
+setupJoystick("moveJoystick", "moveStick", moveJoy);
+setupJoystick("aimJoystick", "aimStick", aimJoy);
 
 updateHUD();
 loop();
