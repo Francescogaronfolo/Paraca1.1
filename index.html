@@ -1,20 +1,46 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>PARACA 1.1</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>PARACA ARENA</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<canvas id="gameCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
-<div id="bottomUI">
-  <button id="assaultBtn">ASSALTO</button>
-  <div id="cardBar"></div>
-</div>
+  <div id="hud">
+    <div id="title">PARACA ARENA</div>
+    <div id="stats">
+      <div>Score: <span id="score">0</span></div>
+      <div>Livello: <span id="level">1</span></div>
+      <div>XP: <span id="xp">0</span>/<span id="xpNeed">100</span></div>
+    </div>
 
-<script src="game.js"></script>
+    <div id="xpBar">
+      <div id="xpFill"></div>
+    </div>
+  </div>
+
+  <div id="upgradePanel">
+    <div class="upgrade" data-upgrade="damage">Danno +</div>
+    <div class="upgrade" data-upgrade="reload">Cadenza +</div>
+    <div class="upgrade" data-upgrade="speed">Velocità +</div>
+    <div class="upgrade" data-upgrade="hp">Corazza +</div>
+  </div>
+
+  <div id="upgradePoints">
+    Punti upgrade: <span id="points">0</span>
+  </div>
+
+  <div id="mobileControls">
+    <div id="joyBase">
+      <div id="joyStick"></div>
+    </div>
+    <button id="shootBtn">FUOCO</button>
+  </div>
+
+  <script src="game.js"></script>
 </body>
 </html>
